@@ -1,5 +1,5 @@
-﻿CREATE DATABASE IF NOT EXISTS boarding_house_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE boarding_house_db;
+﻿CREATE DATABASE IF NOT EXISTS quanlynhatro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE quanlynhatro;
 
 CREATE TABLE users (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), username VARCHAR(50) NOT NULL UNIQUE,
