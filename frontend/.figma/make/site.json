@@ -1,0 +1,11 @@
+{
+  "title": "web quản lý nhà trọ",
+  "description": "Manage rental properties efficiently with an intuitive interface featuring a navy blue and white theme for easy navigation and control.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

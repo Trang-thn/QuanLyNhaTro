@@ -20,3 +20,15 @@ API kiểm tra trạng thái: `GET /health` và `GET /api/v1/health`.
 
 Các module nghiệp vụ, CRUD, dashboard và kiểm thử tích hợp được chia theo phân công trong tài liệu; bộ khung hiện cung cấp nền tảng cấu hình và thư mục theo module.
 
+
+## Các thư viện cần tải:
+- 'frontend':
+    `npm install`
+    `npm install @tailwindcss/vite tailwindcss`
+    `npm run dev`
+- 'backend':
+    `npm install`
+    `npm run dev`
+- thư mục dự án:
+    `npm install`
+   ` npm run dev`
