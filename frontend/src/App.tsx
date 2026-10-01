@@ -1,4 +1,5 @@
-﻿function App() {
+﻿import Quanlydiennuoc from './components/Quanlydiennuoc/Quanlydiennuoc';
+function App() {
   return (
     <main className="container py-5">
       <div className="eyebrow mb-2">BOARDING HOUSE MANAGEMENT</div>
