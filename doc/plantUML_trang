@@ -1,0 +1,516 @@
+-----USECASE TONG QUAT
+@startuml
+left to right direction
+' ================= TÙY CHỈNH KÍCH THƯỚC CHỮ VÀ KHOẢNG CÁCH =================
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 16
+
+' Tăng cỡ chữ và độ đệm cho UseCase
+skinparam usecase {
+    FontSize 16
+    Padding 10
+}
+
+' Tăng cỡ chữ cho Actor
+skinparam actor {
+    FontSize 16
+}
+
+' Chỉnh khoảng cách giữa các khối để tối ưu diện tích
+skinparam nodesep 10
+skinparam ranksep 60
+skinparam packageStyle rectangle
+
+actor "Khách / Người dùng" as Guest
+actor "Chủ trọ (Admin)" as Admin
+actor "Người thuê (Tenant)" as Tenant
+
+Admin --|> Guest
+Tenant --|> Guest
+
+rectangle "Quản lý phòng trọ" {
+    ' Module Auth (Trang phụ trách)
+    usecase "Đăng ký tài khoản khách thuê" as UC_Register
+    usecase "Đăng nhập" as UC_Login
+    usecase "Xem thông tin cá nhân & phòng" as UC_Profile
+    usecase "Xem báo cáo & dashboard" as UC_Dashboard
+
+    ' Module Phòng & Tiện nghi (Bình)
+    usecase "Quản lý phòng & loại phòng" as UC_Room
+    usecase "Gán tiện nghi" as UC_Amenity
+
+    ' Module Khách thuê & Hợp đồng (Ngọc)
+    usecase "Quản lý hồ sơ khách thuê" as UC_Tenant
+    usecase "Quản lý hợp đồng thuê" as UC_Contract
+
+    ' Module Điện nước & Hóa đơn (Linh)
+    usecase "Ghi chỉ số điện/nước" as UC_Utility
+    usecase "Tự động sinh hóa đơn" as UC_Invoice
+    usecase "Ghi nhận thanh toán" as UC_Payment
+
+    ' Module Sự cố & Thông báo (Bình)
+    usecase "Gửi yêu cầu báo hỏng" as UC_Maint_Tenant
+    usecase "Xử lý yêu cầu sự cố" as UC_Maint_Admin
+    usecase "Gửi & nhận thông báo" as UC_Notification
+}
+
+' Nối Guest
+Guest --> UC_Register
+Guest --> UC_Login
+
+' Nối Tenant (Đã bổ sung Nhận thông báo)
+Tenant --> UC_Profile
+Tenant --> UC_Maint_Tenant
+Tenant --> UC_Notification
+
+' Nối Admin
+Admin --> UC_Dashboard
+Admin --> UC_Room
+Admin --> UC_Amenity
+Admin --> UC_Tenant
+Admin --> UC_Contract
+Admin --> UC_Utility
+Admin --> UC_Invoice
+Admin --> UC_Payment
+Admin --> UC_Maint_Admin
+Admin --> UC_Notification
+@enduml
+
+
+-----DANG KY KHACH THUE-----
+_______hoatdong_______
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 22
+
+|Khách|
+start
+:Truy cập trang Đăng ký;
+:Nhập Username, Password, Họ tên, SĐT, Số CCCD, Email;
+:Bấm nút "Đăng ký";
+
+|Hệ thống|
+:Kiểm tra tính hợp lệ dữ liệu nhập;
+if (Dữ liệu hợp lệ?) then (Không)
+  |Khách|
+  :Hiển thị lỗi nhập liệu;
+  stop
+else (Có)
+  |Hệ thống|
+  :Kiểm tra Username đã tồn tại trong DB?;
+  if (Trùng Username?) then (Có)
+    |Khách|
+    :Thông báo "Tên đăng nhập đã tồn tại";
+    stop
+  else (Không)
+    |Hệ thống|
+    :Mã hóa password (Bcrypt);
+    :Lưu bản ghi vào bảng `users` (role='TENANT');
+
+    :Tìm `identity_card_number` trong bảng `tenants`;
+    if (Tìm thấy CCCD?) then (Có)
+      :Cập nhật `tenants.user_id = users.id`;
+      :Xác nhận liên kết Phòng trọ thành công;
+    else (Không)
+      :Lưu tài khoản ở trạng thái chờ liên kết;
+    endif
+
+    |Khách|
+    :Thông báo "Đăng ký thành công";
+    :Chuyển hướng sang trang Đăng nhập;
+    stop
+  endif
+endif
+@enduml
+
+______tuantu_____
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 22
+
+autonumber
+actor "Khách" as Guest
+participant "ReactJS Frontend" as FE
+participant "Express Backend" as BE
+database "MySQL DB" as DB
+
+Guest -> FE: 1. Nhập Username, Password, Họ tên, SĐT, Số CCCD, Email
+Guest -> FE: 2. Click "Đăng ký"
+FE -> BE: 3. POST /api/v1/auth/register
+BE -> DB: 4. SELECT * FROM users WHERE username = ?
+activate DB
+DB --> BE: 5. Trả về null (nếu chưa tồn tại)
+deactivate DB
+
+alt Username đã tồn tại
+    BE --> FE: 6a. Trả về 400 Bad Request ("Username đã tồn tại")
+    FE --> Guest: 7a. Thông báo lỗi
+else Username hợp lệ
+    BE -> BE: 6b. Mã hóa mật khẩu
+    BE -> DB: 7b. INSERT INTO users (id, username, password_hash, full_name, phone_number, role)\nVALUES (?, ?, ?, ?, ?, 'TENANT')
+    activate DB
+    DB --> BE: 8b. Trả về user_id mới
+    deactivate DB
+
+    BE -> DB: 9b. SELECT id FROM tenants WHERE identity_card_number = ?
+    activate DB
+    DB --> BE: 10b. Trả về tenant_id (nếu có)
+    deactivate DB
+
+    opt Tìm thấy Hồ sơ Tenant có cùng CCCD
+        BE -> DB: 11b. UPDATE tenants SET user_id = ? WHERE identity_card_number = ?
+        activate DB
+        DB --> BE: 12b. Cập nhật liên kết thành công
+        deactivate DB
+    end
+
+    BE --> FE: 13b. Trả về 201 Created ("Đăng ký thành công")
+    deactivate BE
+    FE --> Guest: 14b. Thông báo thành công & Chuyển sang Đăng nhập
+end
+@enduml
+
+
+
+-------DANG NHAP------
+_______hoatdong_______
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 30
+
+|Người dùng|
+start
+:Nhập Username và Password;
+:Bấm "Đăng nhập";
+
+|Hệ thống|
+:Truy vấn bảng `users` theo Username;
+if (Tài khoản tồn tại?) then (Không)
+  |Người dùng|
+  :Thông báo "Tài khoản hoặc mật khẩu không đúng";
+  stop
+else (Có)
+  |Hệ thống|
+  if (is_active == FALSE?) then (Có)
+    |Người dùng|
+    :Thông báo "Tài khoản bị khóa";
+    stop
+  else (Không)
+    |Hệ thống|
+    :So sánh Password với `password_hash`;
+    if (Khớp mật khẩu?) then (Không)
+      |Người dùng|
+      :Thông báo "Tài khoản hoặc mật khẩu không đúng";
+      stop
+    else (Có)
+      |Hệ thống|
+      :Tạo mã JWT Token (chứa id, role);
+      :Trả Token về Client;
+
+      |Người dùng|
+      :Lưu Token vào LocalStorage;
+      if (Role == 'ADMIN'?) then (Có)
+        :Điều hướng đến Dashboard Admin;
+      else (Không)
+        :Điều hướng đến Trang Khách thuê;
+      endif
+      stop
+    endif
+  endif
+endif
+@enduml
+
+______tuantu_____
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 22
+
+autonumber
+actor "Người dùng" as User
+participant "ReactJS Frontend" as FE
+participant "Express Backend" as BE
+database "MySQL DB" as DB
+
+User -> FE: 1. Nhập Username & Password
+User -> FE: 2. Click "Đăng nhập"
+FE -> BE: 3. POST /api/v1/auth/login {username, password}
+activate BE
+
+BE -> DB: 4. SELECT * FROM users WHERE username = ?
+activate DB
+DB --> BE: 5. Trả về thông tin Người dùng
+deactivate DB
+
+alt User không tồn tại
+    BE --> FE: 6a. Trả về 401 Unauthorized ("Tài khoản hoặc mật khẩu sai")
+    FE --> User: 7a. Hiển thị thông báo sai thông tin
+else User tồn tại
+    BE -> BE: 6b. Bcrypt.compare(password, password_hash)
+    alt Mật khẩu không đúng
+        BE --> FE: 7b1. Trả về 401 Unauthorized
+        FE --> User: 8b1. Hiển thị thông báo sai mật khẩu
+    else Mật khẩu đúng
+        BE -> BE: 7b2. Tạo JWT Token {id, username, role}
+        BE --> FE: 8b2. Trả về 200 OK {token, user: {id, username, role, full_name}}
+        deactivate BE
+        FE -> FE: 9. Lưu JWT Token vào LocalStorage
+
+        alt Role == 'ADMIN'
+            FE --> User: 10a. Điều hướng tới Dashboard
+        else Role == 'TENANT'
+            FE --> User: 10b. Điều hướng tới Trang Khách thuê
+        end
+    end
+end
+@enduml
+
+
+----Quen MK----
+_______hoatdong_______
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 30
+
+|Người dùng|
+start
+:Ở màn hình Đăng nhập;
+:Click chọn "Quên mật khẩu?";
+:Nhập địa chỉ Email đã đăng ký;
+:Bấm "Gửi mã xác thực";
+
+|Hệ thống|
+:Kiểm tra Email có trong bảng `users` không;
+if (Email tồn tại?) then (Không)
+  |Người dùng|
+  :Thông báo "Email không tồn tại";
+  stop
+else (Có)
+  |Hệ thống|
+  :Sinh mã OTP (6 chữ số);
+  :Lưu OTP & Hạn dùng (5 phút);
+  :Gửi Email chứa OTP;
+
+  |Người dùng|
+  :Mở Email lấy mã OTP;
+  :Nhập Mã OTP + Mật khẩu mới;
+  :Bấm "Đặt lại mật khẩu";
+
+  |Hệ thống|
+  :Kiểm tra Mã OTP & Thời hạn;
+  if (OTP hợp lệ?) then (Không)
+    |Người dùng|
+    :Thông báo "Mã OTP không đúng hoặc đã hết hạn";
+    stop
+  else (Có)
+    |Hệ thống|
+    :Mã hóa Mật khẩu mới;
+    :UPDATE bảng `users` set password_hash = mới;
+
+    |Người dùng|
+    :Thông báo "Đặt lại mật khẩu thành công";
+    :Điều hướng về trang Đăng nhập;
+    stop
+  endif
+endif
+@enduml
+
+
+______tuantu_____
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 30
+
+autonumber
+actor "Khách" as Guest
+participant "ReactJS Frontend" as FE
+participant "Express Backend" as BE
+database "MySQL DB" as DB
+
+== Bước 1: Yêu cầu gửi mã OTP qua Email ==
+Guest -> FE: 1. Click "Quên mật khẩu?" & Nhập Email
+Guest -> FE: 2. Click "Gửi mã xác thực"
+FE -> BE: 3. POST /api/v1/auth/forgot-password { email }
+activate BE
+
+BE -> DB: 4. SELECT id FROM users WHERE email = ?
+activate DB
+DB --> BE: 5. Trả về kết quả (null hoặc user record)
+deactivate DB
+
+alt Email không tồn tại
+    BE --> FE: 6a. Trả về 404 Not Found ("Email không tồn tại")
+    FE --> Guest: 7a. Thông báo lỗi
+else Email hợp lệ
+    BE -> BE: 6b. Sinh OTP 6 số & hết hạn (exp = 5 phút)
+    BE -> DB: 7b. Lưu mã OTP vào CSDL
+    BE -> BE: 8b. Gửi Email đính kèm OTP
+    BE --> FE: 9b. Trả về 200 OK ("Đã gửi OTP qua Email")
+    deactivate BE
+    FE --> Guest: 10b. Chuyển sang màn hình Nhập OTP & Mật khẩu mới
+end
+
+== Bước 2: Xác thực OTP và Đặt lại Mật khẩu ==
+Guest -> FE: 11. Nhập Mã OTP & Mật khẩu mới
+Guest -> FE: 12. Click "Đặt lại mật khẩu"
+FE -> BE: 13. POST /api/v1/auth/reset-password { email, otp, newPassword }
+activate BE
+
+BE -> DB: 14. SELECT otp, expire_at FROM users WHERE email = ?
+activate DB
+DB --> BE: 15. Trả về mã OTP đã lưu
+deactivate DB
+
+alt OTP không hợp lệ hoặc Hết hạn
+    BE --> FE: 16a. Trả về 400 Bad Request ("OTP không hợp lệ hoặc đã hết hạn")
+    FE --> Guest: 17a. Thông báo lỗi OTP
+else OTP hợp lệ
+    BE -> BE: 16b. Mã hóa (newPassword)
+    BE -> DB: 17b. UPDATE users SET password_hash = ? WHERE email = ?
+    activate DB
+    DB --> BE: 18b. Cập nhật CSDL thành công
+    deactivate DB
+
+    BE --> FE: 19b. Trả về 200 OK ("Đặt lại mật khẩu thành công")
+    deactivate BE
+    FE --> Guest: 20b. Thông báo thành công & Chuyển sang Đăng nhập
+end
+@enduml
+
+-----Thong tin của tài khoản khách thuê và phòng-----
+_______hoatdong_______
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 20
+
+|Người thuê|
+start
+:Vào menu "Thông tin cá nhân & Phòng";
+
+|Hệ thống|
+:Xác thực mã JWT Token;
+if (Token hợp lệ?) then (Không)
+  |Người thuê|
+  :Chuyển hướng yêu cầu đăng nhập lại;
+  stop
+else (Có)
+  |Hệ thống|
+  :Truy vấn `users` theo `user_id`;
+  :Join `tenants`, `contracts`, `rooms` lấy dữ liệu phòng;
+  if (Tìm thấy liên kết Phòng?) then (Có)
+    |Người thuê|
+    :Hiển thị Hồ sơ cá nhân + Thông tin Phòng & Hợp đồng;
+  else (Không)
+    |Người thuê|
+    :Hiển thị Hồ sơ cá nhân + Báo "Chưa liên kết phòng";
+  endif
+  stop
+endif
+@enduml
+
+
+______tuantu_____
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 20
+
+autonumber
+actor "Người thuê" as Tenant
+participant "ReactJS Frontend" as FE
+participant "Express Backend" as BE
+database "MySQL DB" as DB
+
+Tenant -> FE: 1. Chọn menu "Thông tin cá nhân & Phòng"
+FE -> BE: 2. GET /api/v1/users/me
+activate BE
+
+BE -> BE: 3. Xác thực JWT Token
+BE -> DB: 4. SELECT * FROM users u\nLEFT JOIN tenants t ON u.id = t.user_id\nLEFT JOIN contracts c ON t.id = c.representative_tenant_id\nLEFT JOIN rooms r ON c.room_id = r.id\nWHERE u.id = ?
+activate DB
+DB --> BE: 5. Trả về thông tin cá nhân & Phòng trọ
+deactivate DB
+
+BE --> FE: 6. Trả về 200 OK { userProfile, roomInfo, contractInfo }
+deactivate BE
+FE --> Tenant: 7. Hiển thị Hồ sơ cá nhân & Chi tiết phòng trọ
+@enduml
+
+
+------bao cao & dashboard------
+_______hoatdong_______
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 20
+
+|Chủ trọ|
+start
+:Truy cập đường dẫn đến Dashboard;
+
+|Hệ thống|
+:Xác thực JWT Token & Kiểm tra Role == 'ADMIN';
+if (Quyền ADMIN hợp lệ?) then (Không)
+  |Chủ trọ|
+  :Chuyển hướng về trang Đăng nhập;
+  stop
+else (Có)
+  |Hệ thống|
+  :Thống kê trạng thái phòng từ bảng `rooms`;
+  :Tính tổng dư nợ từ bảng `invoices`;
+  :Thống kê doanh thu theo tháng từ bảng `payments`;
+  :Tổng hợp và trả dữ liệu dạng JSON;
+
+  |Chủ trọ|
+  :Render Card chỉ số tổng quan;
+  :Vẽ Biểu đồ Doanh thu & Tỷ lệ lấp đầy phòng;
+  stop
+endif
+@enduml
+
+______tuantu_____
+@startuml
+skinparam dpi 300
+scale 1.3
+skinparam defaultFontSize 20
+
+autonumber
+actor "Chủ trọ" as Admin
+participant "ReactJS Frontend" as FE
+participant "Express Backend" as BE
+database "MySQL DB" as DB
+
+Admin -> FE: 1. Truy cập dashboard
+FE -> BE: 2. GET /api/v1/dashboard/overview
+activate BE
+
+BE -> BE: 3. Xác thực JWT Token & Kiểm tra Role == 'ADMIN'
+alt Không phải ADMIN / Token hết hạn
+    BE --> FE: 4a. Trả về 401 / 403
+    FE --> Admin: 5a. Chuyển hướng về trang Đăng nhập
+else Xác thực Admin thành công
+    BE -> DB: 4b. Query 1: Thống kê số lượng phòng theo status (`rooms`)
+    activate DB
+    DB --> BE: Kết quả số lượng phòng
+
+    BE -> DB: 5b. Query 2: Tính tổng công nợ chưa thu (`invoices`)
+    DB --> BE: Kết quả tổng nợ
+
+    BE -> DB: 6b. Query 3: Thống kê doanh thu thực thu theo tháng (`payments`)
+    DB --> BE: Mảng doanh thu từng tháng
+    deactivate DB
+
+    BE -> BE: 7b. Tổng hợp kết quả JSON
+    BE --> FE: 8b. Trả về 200 OK { roomStats, totalDebt, revenueChart }
+    deactivate BE
+
+    FE -> FE: 9b. Render Card thông số và vẽ biểu đồ
+    FE --> Admin: 10b. Hiển thị màn hình Dashboard Báo cáo
+end
+@enduml
