@@ -8,7 +8,9 @@
     "dev": "concurrently -k -p \"[{name}]\" -c \"blue.bold,green.bold\" -n \"BACKEND,FRONTEND\" \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.3",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "tailwindcss": "^4.3.3"
   }
 }
