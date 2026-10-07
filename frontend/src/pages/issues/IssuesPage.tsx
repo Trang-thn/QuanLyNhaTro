@@ -54,15 +54,6 @@ export default function IssuePage() {
           <span className="text-[#8c9bae]">/</span>
           <span className="font-['Manrope:Bold'] font-bold text-[#172b4d]">Quản Lý Sự Cố</span>
         </div>
-        <button
-          type="button"
-          onClick={() => setDetailId(issues[0]?.id ?? null)}
-          disabled={!issues.length}
-          className="flex items-center gap-2 rounded-lg bg-[#172b4d] px-[18px] py-2.5 font-['Manrope:Bold'] text-[13px] font-bold text-[#fff9f2] disabled:opacity-50"
-        >
-          <img src="/assets/67773.svg" alt="" width="16" height="16" />
-          Báo sự cố mới
-        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -137,7 +128,6 @@ export default function IssuePage() {
               key={issue.id}
               issue={issue}
               onDetail={() => setDetailId(issue.id)}
-              onComplete={() => setCompleteId(issue.id)}
             />
           ))}
         </div>

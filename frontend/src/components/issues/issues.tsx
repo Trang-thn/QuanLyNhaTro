@@ -24,11 +24,9 @@ export function SummaryCard({
 export function IssueCard({
     issue,
     onDetail,
-    onComplete,
 }: {
     issue: Issue
     onDetail: () => void
-    onComplete: () => void
 }) {
     return (
         <article className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-[0_4px_6px_rgba(74,59,27,0.05)]">
@@ -82,24 +80,6 @@ export function IssueCard({
                             className="rounded-lg bg-[#fff9f2] px-3 py-1.5 font-['Manrope:Bold'] text-xs font-bold text-[#172b4d] transition hover:bg-[#fff3e0]"
                         >
                             Xem chi tiết
-                        </button>
-                        {issue.status !== 'HOAN_THANH' && (
-                            <button
-                                type="button"
-                                onClick={onComplete}
-                                aria-label={`Hoàn thành sự cố phòng ${issue.room}`}
-                                className="flex size-7 items-center justify-center rounded-md bg-[#fff9f2] transition hover:bg-[#fff3e0]"
-                            >
-                                <img src="/assets/7851d.svg" alt="" width="14" height="14" />
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={onDetail}
-                            aria-label={`Chỉnh sửa sự cố phòng ${issue.room}`}
-                            className="flex size-7 items-center justify-center rounded-md bg-[#f0f4f8] transition hover:bg-[#e5ebf2]"
-                        >
-                            <img src="/assets/f075a.svg" alt="" width="14" height="14" />
                         </button>
                     </div>
                 </div>
