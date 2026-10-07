@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Room, RoomStatus } from '../types'
+import type { Room, RoomStatus } from '../../types/rooms'
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'

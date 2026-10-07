@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { roomTypes } from '../../../data/mockData'
+import { roomTypes } from '../../data/mockData'
 
 const NAVY = '#0d2137'
 

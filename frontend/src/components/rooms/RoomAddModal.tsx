@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { amenities as allAmenities } from '../../../data/mockData'
-import type { Room } from '../types'
+import { amenities as allAmenities } from '../../data/mockData'
+import type { Room } from '../../types/rooms'
 import { RoomTypeDropdown } from './RoomTypeDropdown'
 
 const NAVY = '#0d2137'

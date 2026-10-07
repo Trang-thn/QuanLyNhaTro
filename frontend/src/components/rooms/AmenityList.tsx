@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import type { Amenity } from '../types'
-import type { Room } from '../types'
+import type { Amenity } from '../../types/rooms'
+import type { Room } from '../../types/rooms'
 
 const AMBER = '#f59e0b'
 

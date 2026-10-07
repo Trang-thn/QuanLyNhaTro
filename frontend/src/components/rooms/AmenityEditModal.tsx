@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import type { Amenity } from '../types'
+import type { Amenity } from '../../types/rooms'
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
 
 interface Props {
+  amenity: Amenity
   onClose: () => void
-  onSave: (amenity: Amenity) => void
+  onSave: (updated: Amenity) => void
 }
 
-export function AmenityAddModal({ onClose, onSave }: Props) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+export function AmenityEditModal({ amenity, onClose, onSave }: Props) {
+  const [name, setName] = useState(amenity.name)
+  const [description, setDescription] = useState(amenity.description ?? '')
   const [nameError, setNameError] = useState('')
 
   function handleSubmit() {
@@ -21,7 +22,7 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
       return
     }
     onSave({
-      id: Date.now().toString(),
+      ...amenity,
       name: trimmedName,
       description: description.trim() || undefined,
     })
@@ -35,7 +36,7 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold" style={{ color: NAVY }}>Thêm tiện nghi</h2>
+          <h2 className="text-lg font-bold" style={{ color: NAVY }}>Sửa tiện nghi</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
@@ -55,7 +56,6 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
             </label>
             <input
               type="text"
-              placeholder="Nhập tên tiện nghi (ví dụ: Tủ lạnh)"
               value={name}
               autoFocus
               onChange={e => {
@@ -73,7 +73,6 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Mô tả</label>
             <textarea
-              placeholder="Nhập mô tả ngắn về thiết bị tiện nghi..."
               value={description}
               rows={3}
               onChange={e => setDescription(e.target.value)}
@@ -95,7 +94,7 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:brightness-95"
             style={{ background: AMBER }}
           >
-            Thêm tiện nghi
+            Lưu thay đổi
           </button>
         </div>
       </div>

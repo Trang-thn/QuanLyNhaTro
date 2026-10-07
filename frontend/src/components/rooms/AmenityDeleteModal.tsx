@@ -1,4 +1,4 @@
-import type { Amenity } from '../types'
+import type { Amenity } from '../../types/rooms'
 
 const AMBER = '#f59e0b'
 

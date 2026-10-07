@@ -1,12 +1,12 @@
-import { roomTypes, formatVND } from '../../../data/mockData'
-import type { Room } from '../types'
+import { roomTypes, formatVND } from '../../data/mockData'
+import type { Room } from '../../types/rooms'
 
 const NAVY = '#0d2137'
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   DANG_THUE: { label: 'Đang thuê', bg: '#dbeafe', color: '#1d4ed8' },
-  TRONG:     { label: 'Trống',     bg: '#dcfce7', color: '#16a34a' },
-  BAO_TRI:   { label: 'Bảo trì',   bg: '#fef3c7', color: '#d97706' },
+  TRONG: { label: 'Trống', bg: '#dcfce7', color: '#16a34a' },
+  BAO_TRI: { label: 'Bảo trì', bg: '#fef3c7', color: '#d97706' },
 }
 
 // ── ROOM DELETE (step 1 — show room info + proceed to warning) ──
