@@ -27,6 +27,10 @@ dist/
 .vite/
 .env
 .env.*
+<<<<<<< HEAD
 !.env.example
 plantUML
 promtdh.md
+=======
+!.env.example
+>>>>>>> develop
