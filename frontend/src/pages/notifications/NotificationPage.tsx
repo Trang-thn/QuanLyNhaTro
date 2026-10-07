@@ -1,69 +1,78 @@
 import { useState } from 'react'
+import type { Item, Draft } from "../../types/notifications"
+import { initialItems } from "../../data/notifications/Notifications"
+import { CreateModal, ConfirmModal, DetailModal } from "../../components/notifications/Notifications"
 
-type Item = { id: string; title: string; content: string; recipient: string; sentAt: string; unread: boolean }
-type Draft = { title: string; content: string; target: 'all' | 'person'; scope: 'all' | 'room'; person: string; room: string }
-
-const initialItems: Item[] = [
-  { id: '1', title: 'Thông báo tăng giá điện từ tháng 10', content: 'Kính gửi quý khách thuê phòng, theo quyết định điều chỉnh giá điện mới từ công ty điện lực, chúng tôi xin phép được áp dụng đơn giá điện mới...', recipient: 'Tất cả', sentAt: '10:30 - 01/10/2026', unread: true },
-  { id: '2', title: 'Lịch vệ sinh bể nước ngày 05/10', content: 'Ban quản lý sẽ tiến hành thau rửa, vệ sinh toàn bộ hệ thống bồn chứa nước sạch từ 08:00 đến 12:00. Xin quý khách vui lòng dự trữ nước sạch...', recipient: 'Tất cả', sentAt: '16:15 - 28/09/2026', unread: true },
-  { id: '3', title: 'Nhắc nhở thanh toán tiền trọ tháng 9', content: 'Hệ thống ghi nhận phòng P101 vẫn chưa hoàn tất đóng tiền phòng và chi phí dịch vụ tháng 9. Vui lòng thanh toán đúng hạn...', recipient: 'Nguyễn Văn Trang (P101)', sentAt: '09:00 - 27/09/2026', unread: false },
-  { id: '4', title: 'Thông báo cúp điện ngày 02/10', content: 'Theo kế hoạch bảo trì lưới điện khu vực của Điện lực Quận, toàn bộ khu nhà trọ sẽ tạm thời mất điện từ 13:00 đến 17:00 ngày 02/10...', recipient: 'Tất cả', sentAt: '14:20 - 25/09/2026', unread: false },
-  { id: '5', title: 'Quy định mới về giờ giấc ra vào', content: 'Nhằm tăng cường an ninh trật tự, từ ngày 01/10 khu trọ áp dụng giờ khóa cổng chính từ 23:30 hằng ngày. Quý khách đi trễ vui lòng sử dụng vân tay...', recipient: 'Tất cả', sentAt: '08:00 - 20/09/2026', unread: false },
-]
 const emptyDraft: Draft = { title: '', content: '', target: 'all', scope: 'all', person: '', room: '' }
-
-function Radio({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="flex items-center gap-2"><img src={active ? '/assets/25c57.svg' : '/assets/ec108.svg'} alt="" width="16" height="16" /><span className={`text-sm text-[#1c2534] ${active ? "font-['Inter:Semi_Bold'] font-semibold" : "font-['Inter:Regular']"}`}>{label}</span></button>
-}
-
-function Dropdown({ value, placeholder, options, onChange }: { value: string; placeholder: string; options: string[]; onChange: (value: string) => void }) {
-  const [open, setOpen] = useState(false)
-  return <div className="relative w-full">
-    <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between rounded-lg border border-[#eadfc9] bg-white px-3 py-2.5 text-left text-sm"><span className={value ? 'text-[#1c2534]' : 'text-[#8c9bae]'}>{value || placeholder}</span><span className={open ? 'rotate-180' : ''}>⌄</span></button>
-    {open && <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-[#eadfc9] bg-white py-1 shadow-[0_8px_20px_rgba(23,43,77,0.12)]">{options.map(option => <button key={option} type="button" onClick={() => { onChange(option); setOpen(false) }} className="block w-full px-3 py-2 text-left text-sm text-[#1c2534] hover:bg-[#fff9f2]">{option}</button>)}</div>}
-  </div>
-}
-
-function CreateModal({ draft, setDraft, close, confirm }: { draft: Draft; setDraft: (draft: Draft) => void; close: () => void; confirm: () => void }) {
-  const [errors, setErrors] = useState({ title: false, content: false })
-  const next = () => { const e = { title: !draft.title.trim(), content: !draft.content.trim() }; setErrors(e); if (!e.title && !e.content) confirm() }
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onMouseDown={e => e.target === e.currentTarget && close()}>
-    <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] overflow-y-auto rounded-[20px] border-2 border-[#eadfc9] bg-white shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
-      <div className="flex items-center justify-between border-b border-[#eadfc9] px-6 pb-4 pt-6"><p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Tạo thông báo</p><button type="button" onClick={close} aria-label="Đóng"><img src="/assets/83bc3.svg" alt="" width="18" height="18" /></button></div>
-      <div className="flex flex-col gap-5 p-6">
-        <label className="flex flex-col gap-1.5"><span className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Tiêu đề*</span><input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Nhập tiêu đề thông báo" className={`rounded-lg border p-3 text-sm outline-none placeholder:text-[#8c9bae] ${errors.title ? 'border-red-400' : 'border-[#eadfc9]'}`} />{errors.title && <span className="text-xs text-red-500">Vui lòng nhập tiêu đề</span>}</label>
-        <label className="flex flex-col gap-1.5"><span className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Nội dung*</span><textarea value={draft.content} onChange={e => setDraft({ ...draft, content: e.target.value })} placeholder="Nhập chi tiết nội dung thông báo gửi đến người thuê..." className={`h-24 resize-none rounded-lg border p-3 text-sm outline-none placeholder:text-[#8c9bae] ${errors.content ? 'border-red-400' : 'border-[#eadfc9]'}`} />{errors.content && <span className="text-xs text-red-500">Vui lòng nhập nội dung</span>}</label>
-        <div className="flex flex-col gap-2"><p className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Đối tượng nhận*</p><div className="flex flex-wrap gap-6"><Radio active={draft.target === 'all'} label="Tất cả người thuê" onClick={() => setDraft({ ...draft, target: 'all', person: '' })} /><Radio active={draft.target === 'person'} label="Người thuê cụ thể" onClick={() => setDraft({ ...draft, target: 'person' })} /></div>
-          <div className="flex flex-col gap-3 rounded-[10px] border border-[#eadfc9] bg-[#faf8f5] p-4"><p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">Phạm vi gửi</p><Radio active={draft.scope === 'all'} label="Tất cả phòng" onClick={() => setDraft({ ...draft, scope: 'all', room: '' })} /><Radio active={draft.scope === 'room'} label="Chọn phòng cụ thể" onClick={() => setDraft({ ...draft, scope: 'room' })} />
-            {draft.target === 'person' && <Dropdown value={draft.person} placeholder="Chọn người thuê" options={['Nguyễn Văn Trang (P101)', 'Trần Trí Bồ (P205)', 'Lê Hoàng Nam (P302)']} onChange={person => setDraft({ ...draft, person })} />}
-            {draft.scope === 'room' && <Dropdown value={draft.room} placeholder="Chọn phòng" options={['P101', 'P104', 'P205', 'P302']} onChange={room => setDraft({ ...draft, room })} />}
-            {draft.target === 'all' && draft.scope === 'all' && <div className="rounded-lg border border-[#eadfc9] bg-white p-3 text-[13px] leading-5"><p className="text-[#4f5e74]">Thông báo sẽ được gửi đến tất cả người thuê trong hệ thống.</p><p className="text-[#8c9bae]">Không cần chọn từng người hoặc từng phòng.</p></div>}
-          </div>
-        </div>
-        <div className="flex justify-end gap-3 pt-3"><button type="button" onClick={close} className="rounded-lg border border-[#eadfc9] px-5 py-2.5 text-sm text-[#4f5e74]">Hủy</button><button type="button" onClick={next} className="rounded-lg bg-[#f59e0b] px-5 py-2.5 font-['Inter:Bold'] text-sm font-bold text-white">Gửi thông báo</button></div>
-      </div>
-    </div>
-  </div>
-}
-
-function ConfirmModal({ cancel, send }: { cancel: () => void; send: () => void }) {
-  return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true"><div className="w-full max-w-[440px] rounded-[20px] border-2 border-[#eadfc9] bg-white p-8 text-center shadow-[0_12px_12px_rgba(23,43,77,0.12)]"><div className="mx-auto flex size-[60px] items-center justify-center rounded-full bg-[#fef3c7]"><img src="/assets/47ce2.svg" alt="" width="32" height="32" /></div><p className="mt-5 font-['Inter:Extra_Bold'] text-xl font-extrabold text-[#1c2534]">Gửi thông báo?</p><p className="mt-2 text-sm text-[#4f5e74]">Thông báo sẽ được gửi đến các đối tượng đã chọn. Thao tác này không thể hoàn tác.</p><div className="mt-8 flex gap-3"><button type="button" onClick={cancel} className="flex-1 rounded-lg border border-[#eadfc9] py-2.5 text-sm text-[#4f5e74]">Hủy</button><button type="button" onClick={send} className="flex-1 rounded-lg bg-[#f59e0b] py-2.5 font-['Inter:Bold'] text-sm font-bold text-white">Gửi ngay</button></div></div></div>
-}
-
-function DetailModal({ item, close }: { item: Item; close: () => void }) {
-  const content = item.id === '1' ? 'Kính gửi quý khách thuê phòng, theo quyết định điều chỉnh giá điện mới từ công ty điện lực, chúng tôi xin phép được áp dụng đơn giá điện mới là 3.800đ/kWh kể từ kỳ hóa đơn tháng 10/2026. Mong quý khách thông cảm và chủ động điều chỉnh lượng tiêu thụ hợp lý. Trân trọng cảm ơn.' : item.content
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onMouseDown={e => e.target === e.currentTarget && close()}><div className="w-full max-w-[600px] rounded-[20px] border-2 border-[#eadfc9] bg-white shadow-[0_12px_12px_rgba(23,43,77,0.12)]"><div className="flex items-center justify-between border-b border-[#eadfc9] px-6 pb-4 pt-6"><p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chi tiết thông báo</p><span className="rounded-md bg-[#e6f4ea] px-2.5 py-1 text-[11px] font-semibold text-[#10b981]">Đã gửi</span></div><div className="flex flex-col gap-5 p-6"><Field label="Tiêu đề" value={item.title} bold /><Field label="Nội dung chi tiết" value={content} /><div className="grid gap-5 sm:grid-cols-2"><Field label="Đối tượng nhận" value={item.recipient === 'Tất cả' ? 'Tất cả người thuê' : item.recipient} bold /><Field label="Thời gian gửi" value={item.sentAt.replace(' - ', ' ')} bold /></div><div className="flex justify-end pt-3"><button type="button" onClick={close} className="rounded-lg border border-[#eadfc9] px-5 py-2.5 text-sm text-[#4f5e74]">Đóng</button></div></div></div></div>
-}
-function Field({ label, value, bold }: { label: string; value: string; bold?: boolean }) { return <div><p className="font-['Inter:Bold'] text-xs font-bold uppercase text-[#8c9bae]">{label}</p><p className={`mt-2 text-sm leading-6 text-[#1c2534] ${bold ? "font-['Inter:Bold'] font-bold" : "font-['Inter:Regular']"}`}>{value}</p></div> }
-
 export default function NotificationPage() {
   const [items, setItems] = useState(initialItems), [tab, setTab] = useState<'sent' | 'inbox'>('sent'), [modal, setModal] = useState<'none' | 'create' | 'confirm'>('none'), [draft, setDraft] = useState(emptyDraft), [selected, setSelected] = useState<string | null>(null)
   const selectedItem = items.find(item => item.id === selected), visible = tab === 'sent' ? items : []
   const send = () => { const recipient = draft.target === 'person' && draft.person ? draft.person : draft.scope === 'room' && draft.room ? `Phòng ${draft.room}` : 'Tất cả'; setItems(current => [{ id: String(Date.now()), title: draft.title.trim(), content: draft.content.trim(), recipient, sentAt: 'Vừa xong', unread: false }, ...current]); setDraft(emptyDraft); setModal('none'); setTab('sent') }
   return <section className="mx-auto flex w-full max-w-[1136px] flex-col gap-6 font-['Inter:Regular']">
-    <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="flex gap-2 text-[13px]"><span className="text-[#8c9bae]">Tổng quan</span><span className="text-[#8c9bae]">/</span><span className="font-['Inter:Bold'] font-bold text-[#172b4d]">Thông báo</span></div><p className="mt-3 font-['Inter:Extra_Bold'] text-[28px] font-extrabold text-[#1c2534]">Thông Báo</p></div><button type="button" onClick={() => setModal('create')} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-['Inter:Bold'] text-sm font-bold text-white"><img src="/assets/583dd.svg" alt="" width="16" height="16" />Tạo thông báo mới</button></div>
-    <div className="rounded-xl border border-[#eadfc9] bg-white p-4"><div className="flex gap-2">{([['sent', 'Đã gửi'], ['inbox', 'Hộp thư đến']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setTab(value)} className={`rounded-lg px-4 py-2 text-[13px] ${tab === value ? "bg-[#f59e0b] font-['Inter:Bold'] font-bold text-white" : 'border border-[#eadfc9] text-[#1c2534]'}`}>{label}</button>)}</div></div>
-    {visible.length ? <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_4px_8px_rgba(74,59,27,0.08)]"><div className="hidden grid-cols-[16px_minmax(0,1fr)_180px_160px] items-center gap-4 border-b border-[#eadfc9] bg-[#faf8f5] px-6 py-3.5 md:grid"><img src="/assets/35a49.svg" alt="" width="16" height="8" /><p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">NỘI DUNG THÔNG BÁO</p><p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">ĐỐI TƯỢNG NHẬN</p><p className="text-right font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">THỜI GIAN GỬI</p></div>{visible.map(item => <button key={item.id} type="button" onClick={() => { setItems(current => current.map(n => n.id === item.id ? { ...n, unread: false } : n)); setSelected(item.id) }} className={`grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 border-b border-[#f5efe0] px-4 py-4 text-left last:border-0 md:grid-cols-[16px_minmax(0,1fr)_180px_160px] md:px-6 ${item.unread ? 'bg-[#fffbf0]' : 'bg-white'}`}><img src={item.unread ? '/assets/6a318.svg' : '/assets/82b44.svg'} alt="" width="16" height="8" /><div className="min-w-0"><p className={`truncate text-[15px] text-[#1c2534] ${item.unread ? "font-['Inter:Bold'] font-bold" : 'font-semibold'}`}>{item.title}</p><p className="mt-1 truncate text-[13px] text-[#4f5e74]">{item.content}</p></div><div className="col-start-2 md:col-auto"><span className={`inline-block max-w-full truncate rounded-md px-2.5 py-1 text-[11px] font-semibold ${item.recipient === 'Tất cả' ? 'bg-[#e3f2fd] text-[#3b82f6]' : 'bg-[#fff3e0] text-[#d97706]'}`}>{item.recipient}</span></div><p className="col-start-2 text-xs text-[#8c9bae] md:col-auto md:text-right md:text-[13px]">{item.sentAt}</p></button>)}</div> : <div className="flex min-h-[350px] flex-col items-center justify-center gap-5 rounded-2xl border border-[#eadfc9] bg-white p-10 text-center"><div className="flex size-20 items-center justify-center rounded-full bg-[#faf8f5]"><img src="/assets/46d07.svg" alt="" width="40" height="40" /></div><div><p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chưa có thông báo nào</p><p className="mx-auto mt-2 max-w-80 text-sm text-[#4f5e74]">Bạn chưa gửi thông báo nào. Bấm vào nút bên dưới để tạo và gửi thông báo đầu tiên của bạn.</p></div><button type="button" onClick={() => setModal('create')} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-bold text-white"><img src="/assets/583dd.svg" alt="" width="16" height="16" />Tạo thông báo</button></div>}
-    {modal === 'create' && <CreateModal draft={draft} setDraft={setDraft} close={() => setModal('none')} confirm={() => setModal('confirm')} />}{modal === 'confirm' && <ConfirmModal cancel={() => setModal('create')} send={send} />}{selectedItem && <DetailModal item={selectedItem} close={() => setSelected(null)} />}
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div className="flex gap-2 text-[13px]">
+          <span className="text-[#8c9bae]">Tổng quan</span>
+          <span className="text-[#8c9bae]">/</span>
+          <span className="font-['Inter:Bold'] font-bold text-[#172b4d]">Thông báo</span>
+        </div>
+        <p className="mt-3 font-['Inter:Extra_Bold'] text-[28px] font-extrabold text-[#1c2534]">Thông Báo</p>
+      </div>
+      <button type="button" onClick={() => setModal('create')} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-['Inter:Bold'] text-sm font-bold text-white">
+        <img src="/assets/583dd.svg" alt="" width="16" height="16" />
+        Tạo thông báo mới
+      </button>
+    </div>
+    <div className="rounded-xl border border-[#eadfc9] bg-white p-4">
+      <div className="flex gap-2">
+        {
+          ([['sent', 'Đã gửi'], ['inbox', 'Hộp thư đến']] as const).map(([value, label]) =>
+            <button key={value} type="button" onClick={() => setTab(value)} className={`rounded-lg px-4 py-2 text-[13px] ${tab === value ? "bg-[#f59e0b] font-['Inter:Bold'] font-bold text-white" : 'border border-[#eadfc9] text-[#1c2534]'}`}>{label}</button>)
+        }
+      </div>
+    </div>
+    {
+      visible.length ?
+        <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_4px_8px_rgba(74,59,27,0.08)]">
+          <div className="hidden grid-cols-[16px_minmax(0,1fr)_180px_160px] items-center gap-4 border-b border-[#eadfc9] bg-[#faf8f5] px-6 py-3.5 md:grid">
+            <img src="/assets/35a49.svg" alt="" width="16" height="8" />
+            <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">NỘI DUNG THÔNG BÁO</p>
+            <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">ĐỐI TƯỢNG NHẬN</p>
+            <p className="text-right font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">THỜI GIAN GỬI</p>
+          </div>
+          {
+            visible.map(item =>
+              <button key={item.id} type="button" onClick={() => {
+                setItems(current => current.map(n => n.id === item.id ? { ...n, unread: false } : n)); setSelected(item.id)
+              }
+              }
+                className={`grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 border-b border-[#f5efe0] px-4 py-4 text-left last:border-0 md:grid-cols-[16px_minmax(0,1fr)_180px_160px] md:px-6 ${item.unread ? 'bg-[#fffbf0]' : 'bg-white'}`}><img src={item.unread ? '/assets/6a318.svg' : '/assets/82b44.svg'} alt="" width="16" height="8" />
+                <div className="min-w-0">
+                  <p className={`truncate text-[15px] text-[#1c2534] ${item.unread ? "font-['Inter:Bold'] font-bold" : 'font-semibold'}`}>{item.title}</p>
+                  <p className="mt-1 truncate text-[13px] text-[#4f5e74]">{item.content}</p>
+                </div>
+                <div className="col-start-2 md:col-auto">
+                  <span className={`inline-block max-w-full truncate rounded-md px-2.5 py-1 text-[11px] font-semibold ${item.recipient === 'Tất cả' ? 'bg-[#e3f2fd] text-[#3b82f6]' : 'bg-[#fff3e0] text-[#d97706]'}`}>{item.recipient}</span>
+                </div>
+                <p className="col-start-2 text-xs text-[#8c9bae] md:col-auto md:text-right md:text-[13px]">{item.sentAt}</p>
+              </button>
+            )
+          }
+        </div> :
+        <div className="flex min-h-[350px] flex-col items-center justify-center gap-5 rounded-2xl border border-[#eadfc9] bg-white p-10 text-center">
+          <div className="flex size-20 items-center justify-center rounded-full bg-[#faf8f5]">
+            <img src="/assets/46d07.svg" alt="" width="40" height="40" />
+          </div>
+          <div>
+            <p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chưa có thông báo nào</p>
+            <p className="mx-auto mt-2 max-w-80 text-sm text-[#4f5e74]">Bạn chưa gửi thông báo nào. Bấm vào nút bên dưới để tạo và gửi thông báo đầu tiên của bạn.</p>
+          </div>
+          <button type="button" onClick={() => setModal('create')} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-bold text-white">
+            <img src="/assets/583dd.svg" alt="" width="16" height="16" />Tạo thông báo</button>
+        </div>
+    }
+    {modal === 'create' && <CreateModal draft={draft} setDraft={setDraft} close={() => setModal('none')} confirm={() => setModal('confirm')} />}
+    {modal === 'confirm' && <ConfirmModal cancel={() => setModal('create')} send={send} />}
+    {selectedItem && <DetailModal item={selectedItem} close={() => setSelected(null)} />}
   </section>
 }
