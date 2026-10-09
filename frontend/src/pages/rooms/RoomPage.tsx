@@ -9,7 +9,7 @@ import { AmenityList } from '../../components/rooms/AmenityList'
 import { RoomAddModal } from '../../components/rooms/RoomAddModal'
 import { RoomEditModal } from '../../components/rooms/RoomEditModal'
 import { RoomDetailModal } from '../../components/rooms/RoomDetailModal'
-import { RoomStatusModal, RoomStatusWarningModal } from '../../components/rooms/RoomStatusModal'
+import { RoomStatusModal } from '../../components/rooms/RoomStatusModal'
 import { RoomDeleteModal, RoomDeleteWarningModal } from '../../components/rooms/RoomDeleteModal'
 import { AmenityAddModal } from '../../components/rooms/AmenityAddModal'
 import { AmenityEditModal } from '../../components/rooms/AmenityEditModal'
@@ -26,7 +26,6 @@ type ActiveModal =
   | { kind: 'edit'; room: Room }
   | { kind: 'detail'; room: Room }
   | { kind: 'status'; room: Room }
-  | { kind: 'status_warning'; room: Room; newStatus: RoomStatus }
   | { kind: 'delete'; room: Room }
   | { kind: 'delete_warning'; room: Room }
   | { kind: 'amenity_add' }
@@ -47,6 +46,7 @@ function mapApiRoom(room: RoomApiDTO): Room {
     room_type_id: room.room_type_id,
     room_type_name: room.room_type_name ?? null,
     status: room.status,
+    has_active_contract: room.has_active_contract === undefined ? undefined : Boolean(room.has_active_contract),
     floor: room.floor,
     description: room.description,
     created_at: room.created_at,
@@ -593,15 +593,6 @@ export default function RoomPage() {
           room={modal.room}
           onClose={closeModal}
           onSave={newStatus => handleSaveStatus(modal.room, newStatus)}
-          onNeedWarning={newStatus => setModal({ kind: 'status_warning', room: modal.room, newStatus })}
-        />
-      )}
-      {modal.kind === 'status_warning' && (
-        <RoomStatusWarningModal
-          room={modal.room}
-          newStatus={modal.newStatus}
-          onClose={closeModal}
-          onConfirm={() => handleSaveStatus(modal.room, modal.newStatus)}
         />
       )}
       {modal.kind === 'delete' && (

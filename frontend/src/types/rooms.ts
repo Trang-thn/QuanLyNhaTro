@@ -6,6 +6,7 @@ export interface Room {
   room_type_id: string | null
   room_type_name: string | null
   status: RoomStatus | null
+  has_active_contract?: boolean
   floor: number | null
   description: string | null
   created_at: string | null
@@ -19,6 +20,7 @@ export interface RoomApiDTO {
   room_number: string
   room_type_id: string | null
   status: RoomStatus | null
+  has_active_contract?: number | boolean
   floor: number | null
   description: string | null
   created_at: string | null
