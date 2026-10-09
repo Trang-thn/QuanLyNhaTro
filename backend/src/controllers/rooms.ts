@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as roomsService from '../services/room.service';
-import type { CreateRoomInput, UpdateRoomInput } from '../types/rooms';
+import type { CreateRoomInput, CreateRoomTypeInput, UpdateRoomInput, UpdateRoomTypeInput } from '../types/rooms';
 
 function sendError(res: Response, error: unknown) {
   if (error instanceof roomsService.RoomServiceError) {
@@ -35,6 +35,42 @@ export async function getRoomTypes(_req: Request, res: Response) {
   catch (error) { return sendError(res, error); }
 }
 
+function validateRoomTypeBody(body: unknown, partial: boolean) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Request body must be an object';
+  const value = body as Record<string, unknown>;
+  const allowed = ['name', 'base_price', 'area_sqm', 'description'];
+  if (Object.keys(value).some((key) => !allowed.includes(key))) return 'Request contains unsupported fields';
+  if (!partial && (typeof value.name !== 'string' || !value.name.trim())) return 'name is required';
+  if (value.name !== undefined && (typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 100)) return 'name must contain 1 to 100 characters';
+  if (!partial && (typeof value.base_price !== 'number' || !Number.isFinite(value.base_price) || value.base_price <= 0 || value.base_price > 9999999999.99)) return 'base_price must be a positive number';
+  if (value.base_price !== undefined && (typeof value.base_price !== 'number' || !Number.isFinite(value.base_price) || value.base_price <= 0 || value.base_price > 9999999999.99)) return 'base_price must be a positive number';
+  if (value.area_sqm !== undefined && value.area_sqm !== null && (typeof value.area_sqm !== 'number' || !Number.isFinite(value.area_sqm) || value.area_sqm <= 0 || value.area_sqm > 999.99)) return 'area_sqm must be a positive number up to 999.99';
+  if (value.description !== undefined && value.description !== null && typeof value.description !== 'string') return 'description must be a string or null';
+  if (partial && Object.keys(value).length === 0) return 'At least one field is required';
+  return null;
+}
+
+export async function createRoomType(req: Request, res: Response) {
+  const invalid = validateRoomTypeBody(req.body, false);
+  if (invalid) return res.status(400).json({ message: invalid });
+  try { return res.status(201).json({ data: await roomsService.createRoomType(req.body as CreateRoomTypeInput) }); }
+  catch (error) { return sendError(res, error); }
+}
+
+export async function updateRoomType(req: Request, res: Response) {
+  if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid room type id' });
+  const invalid = validateRoomTypeBody(req.body, true);
+  if (invalid) return res.status(400).json({ message: invalid });
+  try { return res.json({ data: await roomsService.updateRoomType(req.params.id, req.body as UpdateRoomTypeInput) }); }
+  catch (error) { return sendError(res, error); }
+}
+
+export async function deleteRoomType(req: Request, res: Response) {
+  if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid room type id' });
+  try { await roomsService.deleteRoomType(req.params.id); return res.status(204).send(); }
+  catch (error) { return sendError(res, error); }
+}
+
 export async function getRoom(req: Request, res: Response) {
   if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid room id' });
   try { return res.json({ data: await roomsService.getRoom(req.params.id) }); }
@@ -44,11 +80,28 @@ export async function getRoom(req: Request, res: Response) {
 function validateRoomBody(body: unknown, partial: boolean) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Request body must be an object';
   const value = body as Record<string, unknown>;
-  const allowed = ['room_number', 'room_type_id', 'status', 'floor', 'description'];
+  const allowed = partial
+    ? ['room_number', 'room_type_id', 'status', 'floor', 'description']
+    : ['room_number', 'room_type_id', 'new_room_type', 'status', 'floor', 'description'];
   if (Object.keys(value).some((key) => !allowed.includes(key))) return 'Request contains unsupported fields';
   if (!partial && (typeof value.room_number !== 'string' || !value.room_number.trim())) return 'room_number is required';
   if (value.room_number !== undefined && (typeof value.room_number !== 'string' || !value.room_number.trim() || value.room_number.trim().length > 20)) return 'room_number must contain 1 to 20 characters';
   if (value.room_type_id !== undefined && value.room_type_id !== null && (typeof value.room_type_id !== 'string' || !validId(value.room_type_id))) return 'room_type_id must be a UUID or null';
+  if (!partial) {
+    const hasExistingType = value.room_type_id !== undefined;
+    const hasNewType = value.new_room_type !== undefined;
+    if (hasExistingType && hasNewType) return 'Provide only one of room_type_id or new_room_type';
+  }
+  if (value.new_room_type !== undefined) {
+    if (partial || !value.new_room_type || typeof value.new_room_type !== 'object' || Array.isArray(value.new_room_type)) return 'new_room_type must be an object';
+    const newType = value.new_room_type as Record<string, unknown>;
+    const allowedTypeFields = ['name', 'base_price', 'area_sqm', 'description'];
+    if (Object.keys(newType).some((key) => !allowedTypeFields.includes(key))) return 'new_room_type contains unsupported fields';
+    if (typeof newType.name !== 'string' || !newType.name.trim() || newType.name.trim().length > 100) return 'new_room_type.name must contain 1 to 100 characters';
+    if (typeof newType.base_price !== 'number' || !Number.isFinite(newType.base_price) || newType.base_price <= 0 || newType.base_price > 9999999999.99) return 'new_room_type.base_price must be a positive number';
+    if (newType.area_sqm !== undefined && newType.area_sqm !== null && (typeof newType.area_sqm !== 'number' || !Number.isFinite(newType.area_sqm) || newType.area_sqm <= 0 || newType.area_sqm > 999.99)) return 'new_room_type.area_sqm must be a positive number up to 999.99';
+    if (newType.description !== undefined && newType.description !== null && typeof newType.description !== 'string') return 'new_room_type.description must be a string or null';
+  }
   if (value.status !== undefined && (typeof value.status !== 'string' || !value.status.trim() || value.status.trim().length > 20)) return 'status must contain 1 to 20 characters';
   if (value.floor !== undefined && (!Number.isInteger(value.floor) || (value.floor as number) < 1)) return 'floor must be a positive integer';
   if (value.description !== undefined && value.description !== null && typeof value.description !== 'string') return 'description must be a string or null';

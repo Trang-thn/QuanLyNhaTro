@@ -30,10 +30,20 @@ export interface CountQueryRow extends RowDataPacket {
 export interface CreateRoomInput {
   room_number: string;
   room_type_id?: string | null;
+  new_room_type?: CreateRoomTypeInput;
   status?: RoomStatus;
   floor?: number;
   description?: string | null;
 }
+
+export interface CreateRoomTypeInput {
+  name: string;
+  base_price: number;
+  area_sqm?: number | null;
+  description?: string | null;
+}
+
+export type UpdateRoomTypeInput = Partial<CreateRoomTypeInput>;
 
 export type UpdateRoomInput = Partial<CreateRoomInput>;
 

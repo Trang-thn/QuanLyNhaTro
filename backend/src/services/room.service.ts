@@ -1,6 +1,7 @@
 import { ResultSetHeader } from 'mysql2';
+import { randomUUID } from 'node:crypto';
 import { pool } from '../config/database';
-import type { CountQueryRow, CreateRoomInput, RoomListFilters, RoomListResponse, RoomRecord, RoomTypeRecord, UpdateRoomInput } from '../types/rooms';
+import type { CountQueryRow, CreateRoomInput, CreateRoomTypeInput, RoomListFilters, RoomListResponse, RoomRecord, RoomTypeRecord, UpdateRoomInput, UpdateRoomTypeInput } from '../types/rooms';
 
 export class RoomServiceError extends Error {
   constructor(public statusCode: number, message: string) { super(message); }
@@ -26,6 +27,53 @@ export async function getRoomTypes() {
   return rows;
 }
 
+export async function createRoomType(input: CreateRoomTypeInput) {
+  const id = randomUUID();
+  await pool.execute<ResultSetHeader>(
+    'INSERT INTO room_types (id, name, base_price, area_sqm, description) VALUES (?, ?, ?, ?, ?)',
+    [id, input.name.trim(), input.base_price, input.area_sqm ?? null, input.description?.trim() || null],
+  );
+  const [rows] = await pool.query<RoomTypeRecord[]>('SELECT id, name, base_price, area_sqm, description FROM room_types WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function updateRoomType(id: string, input: UpdateRoomTypeInput) {
+  const fields: string[] = [];
+  const values: Array<string | number | null> = [];
+  for (const key of ['name', 'base_price', 'area_sqm', 'description'] as const) {
+    if (input[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      const value = input[key];
+      values.push(key === 'name' || key === 'description' ? (value as string | null)?.trim() || null : value as number | null);
+    }
+  }
+  const [result] = await pool.execute<ResultSetHeader>(`UPDATE room_types SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
+  if (result.affectedRows === 0) {
+    const [rows] = await pool.query<RoomTypeRecord[]>('SELECT id, name, base_price, area_sqm, description FROM room_types WHERE id = ?', [id]);
+    if (!rows[0]) throw new RoomServiceError(404, 'Room type not found');
+  }
+  const [rows] = await pool.query<RoomTypeRecord[]>('SELECT id, name, base_price, area_sqm, description FROM room_types WHERE id = ?', [id]);
+  return rows[0];
+}
+
+export async function deleteRoomType(id: string) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [types] = await connection.query<RoomTypeRecord[]>('SELECT id FROM room_types WHERE id = ? FOR UPDATE', [id]);
+    if (!types[0]) throw new RoomServiceError(404, 'Room type not found');
+    const [rooms] = await connection.query<CountQueryRow[]>('SELECT COUNT(*) AS total FROM rooms WHERE room_type_id = ?', [id]);
+    if (Number(rooms[0].total) > 0) throw new RoomServiceError(409, 'Room type is assigned to one or more rooms');
+    await connection.execute<ResultSetHeader>('DELETE FROM room_types WHERE id = ?', [id]);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 export async function getRoom(id: string) {
   const [rows] = await pool.query<RoomRecord[]>(`${roomSelect} WHERE r.id = ?`, [id]);
   if (!rows[0]) throw new RoomServiceError(404, 'Room not found');
@@ -34,16 +82,40 @@ export async function getRoom(id: string) {
 
 export async function createRoom(input: CreateRoomInput) {
   const roomNumber = input.room_number!.trim();
-  await pool.execute<ResultSetHeader>(
-    'INSERT INTO rooms (room_number, room_type_id, status, floor, description) VALUES (?, ?, ?, ?, ?)',
-    [roomNumber, input.room_type_id ?? null, input.status?.trim() ?? 'TRONG', input.floor ?? 1, input.description ?? null],
-  );
-  return getRoomByNumber(roomNumber);
-}
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    let roomTypeId = input.room_type_id ?? null;
 
-async function getRoomByNumber(roomNumber: string) {
-  const [rows] = await pool.query<RoomRecord[]>(`${roomSelect} WHERE r.room_number = ?`, [roomNumber]);
-  return rows[0];
+    if (input.new_room_type) {
+      roomTypeId = randomUUID();
+      await connection.execute<ResultSetHeader>(
+        'INSERT INTO room_types (id, name, base_price, area_sqm, description) VALUES (?, ?, ?, ?, ?)',
+        [
+          roomTypeId,
+          input.new_room_type.name.trim(),
+          input.new_room_type.base_price,
+          input.new_room_type.area_sqm ?? null,
+          input.new_room_type.description?.trim() || null,
+        ],
+      );
+    }
+
+    await connection.execute<ResultSetHeader>(
+      'INSERT INTO rooms (room_number, room_type_id, status, floor, description) VALUES (?, ?, ?, ?, ?)',
+      [roomNumber, roomTypeId, input.status?.trim() ?? 'TRONG', input.floor ?? 1, input.description ?? null],
+    );
+
+    const [rows] = await connection.query<RoomRecord[]>(`${roomSelect} WHERE r.room_number = ?`, [roomNumber]);
+    if (!rows[0]) throw new RoomServiceError(500, 'Created room could not be loaded');
+    await connection.commit();
+    return rows[0];
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 export async function updateRoom(id: string, input: UpdateRoomInput) {
