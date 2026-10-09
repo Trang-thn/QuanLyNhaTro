@@ -81,7 +81,6 @@ const MENU_ITEMS: { label: string; action: RoomMenuAction }[] = [
   { label: 'Xem chi tiết', action: 'detail' },
   { label: 'Sửa phòng', action: 'edit' },
   { label: 'Cập nhật trạng thái', action: 'status' },
-  { label: 'Quản lý tiện nghi', action: 'amenity' },
 ]
 
 interface Props {

@@ -13,11 +13,10 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }
 interface Props {
   room: Room
   onClose: () => void
-  onAssign: () => void
   allAmenities: Amenity[]
 }
 
-export function RoomDetailModal({ room, onClose, onAssign, allAmenities }: Props) {
+export function RoomDetailModal({ room, onClose, allAmenities }: Props) {
   const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
   const roomAmenities = (room.amenity_ids ?? [])
     .map(id => allAmenities.find(a => a.id === id))
@@ -118,19 +117,12 @@ export function RoomDetailModal({ room, onClose, onAssign, allAmenities }: Props
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 pb-6">
+        <div className="px-6 pb-6">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-medium hover:bg-gray-50 transition"
+            className="w-full py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-medium hover:bg-gray-50 transition"
           >
             Đóng
-          </button>
-          <button
-            onClick={onAssign}
-            className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:brightness-95"
-            style={{ background: '#0d2137' }}
-          >
-            Quản lý tiện nghi
           </button>
         </div>
       </div>
