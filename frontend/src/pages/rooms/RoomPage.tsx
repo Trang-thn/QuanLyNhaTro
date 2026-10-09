@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
-import { rooms as initialRooms, roomTypes, amenities as initialAmenities } from '../../data/mockData'
-import type { Room, RoomFilter, RoomMenuAction, RoomStatus, Amenity } from '../../types/rooms'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { amenities as initialAmenities, rooms as previewRoomSeeds, roomTypes as previewRoomTypeSeeds } from '../../data/mockData'
+import type { Room, RoomFilter, RoomMenuAction, RoomStatus, Amenity, RoomDraft, RoomApiDTO, RoomTypeApiDTO, RoomListFilters } from '../../types/rooms'
+import { RoomApiError, createRoom, deleteRoom, getRoom, listRoomTypes, listRooms, updateRoom, updateRoomStatus } from '../../services/roomService'
 import { RoomCard } from '../../components/rooms/RoomCard'
 import { RoomEmptyState } from '../../components/rooms/RoomEmptyState'
 import { FilterDropdown } from '../../components/rooms/FilterDropdown'
@@ -18,9 +19,9 @@ import { AmenityAssignModal } from '../../components/rooms/AmenityAssignModal'
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
 
+type Notice = { type: 'success' | 'error' | 'info'; message: string }
 type ActiveModal =
   | { kind: 'none' }
-  // Room modals
   | { kind: 'add' }
   | { kind: 'edit'; room: Room }
   | { kind: 'detail'; room: Room }
@@ -29,99 +30,306 @@ type ActiveModal =
   | { kind: 'delete'; room: Room }
   | { kind: 'delete_warning'; room: Room }
   | { kind: 'amenity_assign'; room: Room }
-  // Amenity modals
   | { kind: 'amenity_add' }
   | { kind: 'amenity_edit'; amenity: Amenity }
   | { kind: 'amenity_delete'; amenity: Amenity }
   | { kind: 'amenity_delete_warning'; amenity: Amenity }
 
+function numericValue(value: number | string | null | undefined) {
+  if (value == null || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function mapApiRoom(room: RoomApiDTO): Room {
+  return {
+    id: room.id,
+    room_number: room.room_number,
+    room_type_id: room.room_type_id,
+    room_type_name: room.room_type_name ?? null,
+    status: room.status,
+    floor: room.floor,
+    description: room.description,
+    created_at: room.created_at,
+    price: numericValue(room.base_price),
+    area: numericValue(room.area_sqm),
+    // The rooms API does not return amenity assignments.
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof RoomApiError) return error.message
+  return 'Unexpected error while loading room data.'
+}
+
+function mapPreviewRoom(seed: (typeof previewRoomSeeds)[number]): Room {
+  const roomType = previewRoomTypeSeeds.find(type => type.id === seed.room_type_id)
+  return {
+    id: seed.id,
+    room_number: seed.room_number,
+    room_type_id: seed.room_type_id,
+    room_type_name: roomType?.name ?? null,
+    status: seed.status,
+    floor: seed.floor,
+    description: null,
+    created_at: null,
+    amenity_ids: [...seed.amenity_ids],
+    price: roomType?.base_price ?? null,
+    area: roomType?.area_sqm ?? null,
+  }
+}
+
 export default function RoomPage() {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms)
+  const devPreview = import.meta.env.DEV === true && window.location.pathname === '/dev/rooms'
+  const [rooms, setRooms] = useState<Room[]>(() => devPreview ? previewRoomSeeds.map(mapPreviewRoom) : [])
+  const [roomTypes, setRoomTypes] = useState<RoomTypeApiDTO[]>(() => devPreview ? previewRoomTypeSeeds : [])
   const [amenities, setAmenities] = useState<Amenity[]>(initialAmenities)
   const [activeTab, setActiveTab] = useState<'rooms' | 'amenities'>('rooms')
-  const [filter, setFilter] = useState<RoomFilter>({
-    status: 'ALL',
-    floor: 'ALL',
-    type: 'ALL',
-    search: '',
-  })
+  const [filter, setFilter] = useState<RoomFilter>({ status: 'ALL', floor: 'ALL', type: 'ALL', search: '' })
   const [modal, setModal] = useState<ActiveModal>({ kind: 'none' })
+  const [loadingRooms, setLoadingRooms] = useState(!devPreview)
+  const [roomLoadError, setRoomLoadError] = useState<string | null>(null)
+  const [roomTypesError, setRoomTypesError] = useState<string | null>(null)
+  const [loadingTypes, setLoadingTypes] = useState(!devPreview)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const typesRequested = useRef(false)
+  const lastRoomQuery = useRef('')
+  const roomsRequestId = useRef(0)
 
-  const floors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b)
+  const currentQuery: RoomListFilters = {
+    page: 1,
+    limit: 100,
+    floor: filter.floor === 'ALL' ? undefined : Number(filter.floor),
+    status: filter.status === 'ALL' ? undefined : filter.status,
+  }
+  const queryKey = `${currentQuery.floor ?? ''}|${currentQuery.status ?? ''}`
 
-  const filteredRooms = rooms.filter(r => {
-    if (filter.status !== 'ALL' && r.status !== filter.status) return false
-    if (filter.floor !== 'ALL' && String(r.floor) !== filter.floor) return false
-    if (filter.type !== 'ALL' && r.room_type_id !== filter.type) return false
-    if (filter.search && !r.room_number.toLowerCase().includes(filter.search.toLowerCase())) return false
+  const fetchRooms = useCallback(async (query: RoomListFilters, preserveCurrentOrder = false) => {
+    if (devPreview) return true
+    const requestId = ++roomsRequestId.current
+    setLoadingRooms(true)
+    try {
+      const response = await listRooms(query)
+      if (requestId !== roomsRequestId.current) return false
+      const freshRooms = response.data.map(mapApiRoom)
+      setRooms(previous => {
+        if (!preserveCurrentOrder) return freshRooms
+        const freshById = new Map(freshRooms.map(room => [room.id, room]))
+        const keptRooms = previous.flatMap(room => {
+          const freshRoom = freshById.get(room.id)
+          return freshRoom ? [freshRoom] : []
+        })
+        const existingIds = new Set(keptRooms.map(room => room.id))
+        return [...keptRooms, ...freshRooms.filter(room => !existingIds.has(room.id))]
+      })
+      setRoomLoadError(null)
+      return true
+    } catch (error) {
+      if (requestId !== roomsRequestId.current) return false
+      const message = getErrorMessage(error)
+      setRoomLoadError(message)
+      setNotice({ type: 'error', message })
+      return false
+    } finally {
+      if (requestId === roomsRequestId.current) setLoadingRooms(false)
+    }
+  }, [devPreview])
+
+  const fetchRoomTypes = useCallback(async () => {
+    if (devPreview) return true
+    setLoadingTypes(true)
+    try {
+      setRoomTypes(await listRoomTypes())
+      setRoomTypesError(null)
+      return true
+    } catch (error) {
+      const message = getErrorMessage(error)
+      setRoomTypesError(message)
+      setNotice({ type: 'error', message })
+      return false
+    } finally {
+      setLoadingTypes(false)
+    }
+  }, [devPreview])
+
+  useEffect(() => {
+    if (devPreview || typesRequested.current) return
+    typesRequested.current = true
+    void fetchRoomTypes()
+  }, [devPreview, fetchRoomTypes])
+
+  useEffect(() => {
+    if (devPreview || lastRoomQuery.current === queryKey) return
+    lastRoomQuery.current = queryKey
+    void fetchRooms(currentQuery)
+  }, [devPreview, fetchRooms, queryKey])
+
+  const floors = [...new Set(rooms.map(room => room.floor).filter((floor): floor is number => floor !== null))].sort((a, b) => a - b)
+
+  const filteredRooms = rooms.filter(room => {
+    if (filter.type !== 'ALL' && room.room_type_id !== filter.type) return false
+    if (filter.search && !room.room_number.toLowerCase().includes(filter.search.toLowerCase())) return false
     return true
   })
 
-  // ── Room handlers ────────────────────────────────────────────────────────
-
   const closeModal = useCallback(() => setModal({ kind: 'none' }), [])
+  const handleAddRoom = useCallback(() => setModal({ kind: 'add' }), [])
 
   const handleMenuAction = useCallback((room: Room, action: RoomMenuAction) => {
-    if (action === 'detail') setModal({ kind: 'detail', room })
-    else if (action === 'edit') setModal({ kind: 'edit', room })
+    if (action === 'detail' && devPreview) {
+      setModal({ kind: 'detail', room })
+    } else if (action === 'detail') {
+      setDetailLoading(true)
+      void getRoom(room.id)
+        .then(data => setModal({ kind: 'detail', room: mapApiRoom(data) }))
+        .catch(error => setNotice({ type: 'error', message: getErrorMessage(error) }))
+        .finally(() => setDetailLoading(false))
+    } else if (action === 'edit') setModal({ kind: 'edit', room })
     else if (action === 'status') setModal({ kind: 'status', room })
     else if (action === 'delete') setModal({ kind: 'delete', room })
     else if (action === 'amenity') setModal({ kind: 'amenity_assign', room })
-  }, [])
+  }, [devPreview])
 
-  const handleAddRoom = useCallback(() => setModal({ kind: 'add' }), [])
+  const handleSaveAdd = useCallback(async (draft: RoomDraft) => {
+    if (devPreview) {
+      const selectedType = roomTypes.find(type => type.id === draft.room_type_id)
+      setRooms(previous => [...previous, { id: `preview-${Date.now()}`, room_number: draft.room_number, room_type_id: draft.room_type_id, room_type_name: selectedType?.name ?? null, status: draft.status, floor: draft.floor, description: null, created_at: null, amenity_ids: draft.amenity_ids, price: numericValue(selectedType?.base_price), area: numericValue(selectedType?.area_sqm) }])
+      setModal({ kind: 'none' })
+      setNotice({ type: 'success', message: 'Development preview only: changes are kept in page memory and are not sent to the backend.' })
+      return
+    }
+    try {
+      await createRoom({ room_number: draft.room_number, room_type_id: draft.room_type_id, status: draft.status, floor: draft.floor })
+      const refreshed = await fetchRooms(currentQuery, true)
+      setModal({ kind: 'none' })
+      setNotice({
+        type: 'success',
+        message: refreshed
+          ? 'Room created. Price and area come from its room type; amenity selections are not saved because no amenity API is available.'
+          : 'Room created, but the room list could not be refreshed.',
+      })
+    } catch (error) {
+      setNotice({ type: 'error', message: getErrorMessage(error) })
+    }
+  }, [currentQuery.floor, currentQuery.status, devPreview, fetchRooms, roomTypes])
 
-  const handleSaveAdd = useCallback((newRoom: Room) => {
-    setRooms(prev => [...prev, newRoom])
-    setModal({ kind: 'none' })
-  }, [])
+  const handleSaveEdit = useCallback(async (draft: RoomDraft, roomId: string) => {
+    if (devPreview) {
+      const selectedType = roomTypes.find(type => type.id === draft.room_type_id)
+      setRooms(previous => previous.map(room => room.id === roomId ? { ...room, room_number: draft.room_number, room_type_id: draft.room_type_id, room_type_name: selectedType?.name ?? null, status: draft.status, floor: draft.floor, amenity_ids: draft.amenity_ids, price: numericValue(selectedType?.base_price), area: numericValue(selectedType?.area_sqm) } : room))
+      setModal({ kind: 'none' })
+      setNotice({ type: 'success', message: 'Development preview only: changes are kept in page memory and are not sent to the backend.' })
+      return
+    }
+    try {
+      await updateRoom(roomId, { room_number: draft.room_number, room_type_id: draft.room_type_id, floor: draft.floor })
+      const refreshed = await fetchRooms(currentQuery, true)
+      setModal({ kind: 'none' })
+      setNotice({
+        type: 'success',
+        message: refreshed
+          ? 'Room updated. Price and area remain controlled by its room type; amenity selections are not saved.'
+          : 'Room updated, but the room list could not be refreshed.',
+      })
+    } catch (error) {
+      setNotice({ type: 'error', message: getErrorMessage(error) })
+    }
+  }, [currentQuery.floor, currentQuery.status, devPreview, fetchRooms, roomTypes])
 
-  const handleSaveEdit = useCallback((updated: Room) => {
-    setRooms(prev => prev.map(r => r.id === updated.id ? updated : r))
-    setModal({ kind: 'none' })
-  }, [])
+  const handleSaveStatus = useCallback(async (room: Room, newStatus: RoomStatus) => {
+    if (devPreview) {
+      setRooms(previous => previous.map(item => item.id === room.id ? { ...item, status: newStatus } : item))
+      setModal({ kind: 'none' })
+      setNotice({ type: 'success', message: 'Development preview only: changes are kept in page memory and are not sent to the backend.' })
+      return
+    }
+    try {
+      await updateRoomStatus(room.id, newStatus)
+      const refreshed = await fetchRooms(currentQuery, true)
+      setModal({ kind: 'none' })
+      setNotice({ type: refreshed ? 'success' : 'error', message: refreshed ? 'Room status updated.' : 'Status updated, but the room list could not be refreshed.' })
+    } catch (error) {
+      setNotice({ type: 'error', message: getErrorMessage(error) })
+    }
+  }, [currentQuery.floor, currentQuery.status, devPreview, fetchRooms])
 
-  const handleSaveStatus = useCallback((room: Room, newStatus: RoomStatus) => {
-    setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: newStatus } : r))
-    setModal({ kind: 'none' })
-  }, [])
-
-  const handleConfirmDelete = useCallback((room: Room) => {
-    setRooms(prev => prev.filter(r => r.id !== room.id))
-    setModal({ kind: 'none' })
-  }, [])
-
-  // ── Amenity assign handler (from DETAIL or menu) ─────────────────────────
+  const handleConfirmDelete = useCallback(async (room: Room) => {
+    if (devPreview) {
+      setRooms(previous => previous.filter(item => item.id !== room.id))
+      setModal({ kind: 'none' })
+      setNotice({ type: 'success', message: 'Development preview only: changes are kept in page memory and are not sent to the backend.' })
+      return
+    }
+    try {
+      await deleteRoom(room.id)
+      const refreshed = await fetchRooms(currentQuery, true)
+      setModal({ kind: 'none' })
+      setNotice({ type: refreshed ? 'success' : 'error', message: refreshed ? 'Room deleted.' : 'Room deleted, but the room list could not be refreshed.' })
+    } catch (error) {
+      setNotice({ type: 'error', message: getErrorMessage(error) })
+    }
+  }, [currentQuery.floor, currentQuery.status, devPreview, fetchRooms])
 
   const handleSaveAssign = useCallback((room: Room, newIds: string[]) => {
-    setRooms(prev => prev.map(r => r.id === room.id ? { ...r, amenity_ids: newIds } : r))
     setModal({ kind: 'none' })
-  }, [])
+    if (devPreview) {
+      setRooms(previous => previous.map(item => item.id === room.id ? { ...item, amenity_ids: newIds } : item))
+      setNotice({ type: 'success', message: 'Development preview only: changes are kept in page memory and are not sent to the backend.' })
+      return
+    }
+    setNotice({ type: 'info', message: 'Amenity assignment was not saved. The backend does not yet provide an amenity assignment API.' })
+  }, [devPreview])
 
-  // ── Amenity CRUD handlers ────────────────────────────────────────────────
-
-  const handleSaveAddAmenity = useCallback((a: Amenity) => {
-    setAmenities(prev => [...prev, a])
+  const handleSaveAddAmenity = useCallback((amenity: Amenity) => {
+    setAmenities(prev => [...prev, amenity])
     setModal({ kind: 'none' })
   }, [])
 
   const handleSaveEditAmenity = useCallback((updated: Amenity) => {
-    setAmenities(prev => prev.map(a => a.id === updated.id ? updated : a))
+    setAmenities(prev => prev.map(amenity => amenity.id === updated.id ? updated : amenity))
     setModal({ kind: 'none' })
   }, [])
 
   const handleConfirmDeleteAmenity = useCallback((amenity: Amenity) => {
-    setAmenities(prev => prev.filter(a => a.id !== amenity.id))
-    // Also remove from all rooms
-    setRooms(prev => prev.map(r => ({
-      ...r,
-      amenity_ids: r.amenity_ids.filter(id => id !== amenity.id),
-    })))
+    setAmenities(prev => prev.filter(item => item.id !== amenity.id))
     setModal({ kind: 'none' })
   }, [])
 
+  const retryLoading = useCallback(() => {
+    void fetchRoomTypes()
+    void fetchRooms(currentQuery)
+  }, [currentQuery.floor, currentQuery.status, fetchRoomTypes, fetchRooms])
+
   return (
     <div className="flex flex-col gap-5">
+      {devPreview && (
+        <div role="status" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Development preview: mock data only. No API requests are sent from this route.
+        </div>
+      )}
+      {notice && (
+        <div
+          role={notice.type === 'error' ? 'alert' : 'status'}
+          className={`fixed top-4 right-4 z-[60] max-w-lg rounded-xl border px-4 py-3 text-sm shadow-lg ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : notice.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <span>{notice.message}</span>
+            <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss">x</button>
+          </div>
+        </div>
+      )}
+      {notice?.type === 'error' && (
+        <button type="button" onClick={retryLoading} className="fixed top-16 right-4 z-[60] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow">
+          Retry room data
+        </button>
+      )}
+      {detailLoading && <div role="status" className="fixed top-4 left-1/2 z-[60] rounded-lg bg-white px-4 py-2 text-sm shadow">Loading room details...</div>}
+      {activeTab === 'amenities' && (
+        <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Amenity management currently uses page-local mock data; no amenity API is available.
+        </div>
+      )}
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
         <span className="text-gray-400">Tổng quan</span>
@@ -221,8 +429,12 @@ export default function RoomPage() {
           </div>
 
           {/* Room grid / Empty states */}
-          {rooms.length === 0 ? (
-            <RoomEmptyState onAdd={handleAddRoom} />
+          {loadingRooms ? (
+            <div role="status" className="py-12 text-center text-sm text-gray-500">Loading rooms...</div>
+          ) : roomLoadError && rooms.length === 0 ? (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 py-12 text-center text-sm text-red-700">Room data could not be loaded. Use retry to request it again.</div>
+          ) : rooms.length === 0 ? (
+            <RoomEmptyState onAdd={() => setModal({ kind: 'add' })} />
           ) : filteredRooms.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-16 gap-3">
               <svg className="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +467,7 @@ export default function RoomPage() {
           onAdd={() => setModal({ kind: 'amenity_add' })}
           onEdit={a => setModal({ kind: 'amenity_edit', amenity: a })}
           onDelete={a => {
-            const inUse = rooms.some(r => r.amenity_ids.includes(a.id))
+            const inUse = rooms.some(r => (r.amenity_ids ?? []).includes(a.id))
             if (inUse) {
               setModal({ kind: 'amenity_delete_warning', amenity: a })
             } else {
@@ -268,16 +480,17 @@ export default function RoomPage() {
       {/* ── Room modals ── */}
 
       {modal.kind === 'add' && (
-        <RoomAddModal onClose={closeModal} onSave={handleSaveAdd} />
+        <RoomAddModal onClose={closeModal} onSave={handleSaveAdd} roomTypes={roomTypes} loadingTypes={loadingTypes} roomTypesError={roomTypesError} />
       )}
       {modal.kind === 'edit' && (
-        <RoomEditModal room={modal.room} onClose={closeModal} onSave={handleSaveEdit} />
+        <RoomEditModal room={modal.room} onClose={closeModal} roomTypes={roomTypes} loadingTypes={loadingTypes} roomTypesError={roomTypesError} onSave={draft => handleSaveEdit(draft, modal.room.id)} />
       )}
       {modal.kind === 'detail' && (
         <RoomDetailModal
           room={modal.room}
           onClose={closeModal}
           onAssign={() => setModal({ kind: 'amenity_assign', room: modal.room })}
+          allAmenities={amenities}
         />
       )}
       {modal.kind === 'status' && (

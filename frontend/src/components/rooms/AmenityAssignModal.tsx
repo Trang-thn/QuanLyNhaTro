@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function AmenityAssignModal({ room, allAmenities, onClose, onSave }: Props) {
-  const [selected, setSelected] = useState<string[]>([...room.amenity_ids])
+  const [selected, setSelected] = useState<string[]>([...(room.amenity_ids ?? [])])
   const [search, setSearch] = useState('')
 
   function toggle(id: string) {

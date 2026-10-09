@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { amenities as allAmenities } from '../../data/mockData'
-import type { Room } from '../../types/rooms'
+import type { RoomDraft, RoomTypeApiDTO } from '../../types/rooms'
 import { RoomTypeDropdown } from './RoomTypeDropdown'
 
 const NAVY = '#0d2137'
@@ -10,8 +10,6 @@ interface FormData {
   room_number: string
   floor: string
   room_type_id: string
-  price: string
-  area: string
   amenity_ids: string[]
 }
 
@@ -23,7 +21,7 @@ interface FormErrors {
   area?: string
 }
 
-function validate(data: FormData): FormErrors {
+function validate(data: FormData, selectedType?: RoomTypeApiDTO): FormErrors {
   const errors: FormErrors = {}
 
   if (!data.room_number.trim()) {
@@ -41,54 +39,44 @@ function validate(data: FormData): FormErrors {
     errors.room_type_id = 'Vui lòng chọn loại phòng'
   }
 
-  const priceNum = Number(data.price.replace(/\D/g, ''))
-  if (!data.price.trim()) {
-    errors.price = 'Vui lòng nhập giá phòng'
-  } else if (isNaN(priceNum) || priceNum <= 0) {
-    errors.price = 'Giá phòng phải là số dương'
-  }
-
-  const areaNum = parseFloat(data.area)
-  if (!data.area.trim()) {
-    errors.area = 'Vui lòng nhập diện tích'
-  } else if (isNaN(areaNum) || areaNum <= 0) {
-    errors.area = 'Diện tích phải là số dương'
-  }
+  const priceNum = selectedType?.base_price == null ? NaN : Number(selectedType.base_price)
+  if (!selectedType || !Number.isFinite(priceNum) || priceNum <= 0) errors.price = 'Loại phòng chưa có giá hợp lệ từ API'
+  const areaNum = selectedType?.area_sqm == null ? NaN : Number(selectedType.area_sqm)
+  if (!Number.isFinite(areaNum) || areaNum <= 0) errors.area = 'Loại phòng chưa có diện tích hợp lệ từ API'
 
   return errors
 }
 
 interface Props {
   onClose: () => void
-  onSave: (room: Room) => void
+  onSave: (room: RoomDraft) => void
+  roomTypes: RoomTypeApiDTO[]
+  loadingTypes?: boolean
+  roomTypesError?: string | null
 }
 
-export function RoomAddModal({ onClose, onSave }: Props) {
+export function RoomAddModal({ onClose, onSave, roomTypes, loadingTypes = false, roomTypesError }: Props) {
   const [form, setForm] = useState<FormData>({
     room_number: '',
     floor: '',
     room_type_id: '',
-    price: '',
-    area: '',
     amenity_ids: [],
   })
   const [errors, setErrors] = useState<FormErrors>({})
+  const selectedType = roomTypes.find(type => type.id === form.room_type_id)
 
   function handleSubmit() {
-    const errs = validate(form)
+    const errs = validate(form, selectedType)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       return
     }
     onSave({
-      id: Date.now().toString(),
       room_number: form.room_number.trim().toUpperCase(),
       floor: parseInt(form.floor, 10),
       room_type_id: form.room_type_id,
       status: 'TRONG',
       amenity_ids: form.amenity_ids,
-      price: Number(form.price.replace(/\D/g, '')),
-      area: parseFloat(form.area),
     })
   }
 
@@ -171,56 +159,41 @@ export function RoomAddModal({ onClose, onSave }: Props) {
               Loại phòng <span className="text-red-500">*</span>
             </label>
             <RoomTypeDropdown
+              roomTypes={roomTypes}
               value={form.room_type_id}
               onChange={id => {
                 setForm(f => ({ ...f, room_type_id: id }))
-                setErrors(er => ({ ...er, room_type_id: undefined }))
+                setErrors(er => ({ ...er, room_type_id: undefined, price: undefined, area: undefined }))
               }}
               error={errors.room_type_id}
+              loading={loadingTypes}
+              loadError={roomTypesError}
             />
           </div>
 
-          {/* Giá phòng + Diện tích — độc lập, nhập tay */}
+          {/* Giá phòng và diện tích lấy từ loại phòng đã chọn */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Giá phòng <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="đ/tháng"
-                value={form.price}
-                onChange={e => {
-                  setForm(f => ({ ...f, price: e.target.value }))
-                  setErrors(er => ({ ...er, price: undefined }))
-                }}
-                className={inputClass(errors.price)}
-              />
+              <input type="text" readOnly aria-readonly="true" placeholder={form.room_type_id ? 'Giá chưa có từ API' : 'Chọn loại phòng'} value={selectedType?.base_price != null && Number.isFinite(Number(selectedType.base_price)) ? `${new Intl.NumberFormat('vi-VN').format(Number(selectedType.base_price))} đ/tháng` : ''} className={`${inputClass(errors.price)} bg-gray-50`} />
               {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Diện tích (m²) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="m²"
-                value={form.area}
-                onChange={e => {
-                  setForm(f => ({ ...f, area: e.target.value }))
-                  setErrors(er => ({ ...er, area: undefined }))
-                }}
-                className={inputClass(errors.area)}
-              />
+              <input type="text" readOnly aria-readonly="true" placeholder={form.room_type_id ? 'Diện tích chưa có từ API' : 'Chọn loại phòng'} value={selectedType?.area_sqm != null && Number.isFinite(Number(selectedType.area_sqm)) ? `${selectedType.area_sqm} m²` : ''} className={`${inputClass(errors.area)} bg-gray-50`} />
               {errors.area && <p className="mt-1 text-xs text-red-500">{errors.area}</p>}
             </div>
           </div>
+          <p className="text-xs text-gray-500">Giá phòng và diện tích hiển thị theo loại phòng; API tạo phòng chỉ lưu mã loại phòng.</p>
 
           {/* Tiện nghi */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tiện nghi</label>
+            <p className="mb-2 text-xs text-gray-500">{'Ti\u1ec7n nghi ch\u01b0a \u0111\u01b0\u1ee3c l\u01b0u v\u00ec backend ch\u01b0a c\u00f3 API ti\u1ec7n nghi ph\u00f2ng.'}</p>
             <div className="flex flex-wrap gap-2">
               {allAmenities.map(a => {
                 const selected = form.amenity_ids.includes(a.id)

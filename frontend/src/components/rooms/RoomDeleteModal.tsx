@@ -1,4 +1,4 @@
-import { roomTypes, formatVND } from '../../data/mockData'
+import { formatVND } from '../../data/mockData'
 import type { Room } from '../../types/rooms'
 
 const NAVY = '#0d2137'
@@ -18,8 +18,7 @@ interface Props {
 }
 
 export function RoomDeleteModal({ room, onClose, onProceed }: Props) {
-  const rt = roomTypes.find(t => t.id === room.room_type_id)
-  const statusCfg = STATUS_CONFIG[room.status] ?? STATUS_CONFIG.TRONG
+  const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -54,9 +53,9 @@ export function RoomDeleteModal({ room, onClose, onProceed }: Props) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-base" style={{ color: NAVY }}>{room.room_number}</span>
-                {rt && (
+                {room.room_type_name && (
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">
-                    {rt.name}
+                    {room.room_type_name}
                   </span>
                 )}
                 <span
@@ -67,8 +66,7 @@ export function RoomDeleteModal({ room, onClose, onProceed }: Props) {
                 </span>
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Tầng {room.floor} • {rt?.area_sqm ?? '?'}m² • {rt ? formatVND(rt.base_price) : '—'}/tháng
-              </p>
+                Tầng {room.floor ?? '-'} &bull; {room.area ?? '?'}m&sup2; &bull; {room.price != null ? formatVND(room.price) : '-'} / month</p>
             </div>
           </div>
 

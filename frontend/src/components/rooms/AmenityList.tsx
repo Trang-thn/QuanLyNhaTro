@@ -86,7 +86,8 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
   )
 
   function roomCount(amenityId: string) {
-    return rooms.filter(r => r.amenity_ids.includes(amenityId)).length
+    if (rooms.some(room => room.amenity_ids === undefined)) return null
+    return rooms.filter(room => (room.amenity_ids ?? []).includes(amenityId)).length
   }
 
   return (

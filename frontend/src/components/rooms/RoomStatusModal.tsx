@@ -39,7 +39,7 @@ interface Props {
 }
 
 export function RoomStatusModal({ room, onClose, onSave, onNeedWarning }: Props) {
-  const [selected, setSelected] = useState<RoomStatus>(room.status)
+  const [selected, setSelected] = useState<RoomStatus>(room.status ?? 'TRONG')
 
   function handleConfirm() {
     if (selected === room.status) {
@@ -155,7 +155,7 @@ interface StatusWarningProps {
   onConfirm: () => void
 }
 
-const STATUS_LABEL: Record<RoomStatus, string> = {
+const STATUS_LABEL: Record<string, string> = {
   TRONG: 'Trống',
   DANG_THUE: 'Đang thuê',
   BAO_TRI: 'Bảo trì',
@@ -180,7 +180,7 @@ export function RoomStatusWarningModal({ room, newStatus, onClose, onConfirm }: 
           <p className="text-sm text-gray-500 leading-relaxed">
             Phòng <span className="font-semibold text-gray-700">{room.room_number}</span> đang{' '}
             <span className="font-semibold text-blue-600">Đang thuê</span>. Bạn có chắc muốn chuyển sang{' '}
-            <span className="font-semibold text-gray-700">{STATUS_LABEL[newStatus]}</span>?
+            <span className="font-semibold text-gray-700">{STATUS_LABEL[newStatus] ?? newStatus}</span>?
           </p>
         </div>
 

@@ -1,4 +1,5 @@
-import { roomTypes, amenities as allAmenities, formatVND } from '../../data/mockData'
+import { formatVND } from '../../data/mockData'
+import type { Amenity } from '../../types/rooms'
 import type { Room } from '../../types/rooms'
 
 const NAVY = '#0d2137'
@@ -13,14 +14,14 @@ interface Props {
   room: Room
   onClose: () => void
   onAssign: () => void
+  allAmenities: Amenity[]
 }
 
-export function RoomDetailModal({ room, onClose, onAssign }: Props) {
-  const rt = roomTypes.find(t => t.id === room.room_type_id)
-  const statusCfg = STATUS_CONFIG[room.status] ?? STATUS_CONFIG.TRONG
-  const roomAmenities = room.amenity_ids
+export function RoomDetailModal({ room, onClose, onAssign, allAmenities }: Props) {
+  const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
+  const roomAmenities = (room.amenity_ids ?? [])
     .map(id => allAmenities.find(a => a.id === id))
-    .filter(Boolean) as { id: string; name: string }[]
+    .filter(Boolean) as Amenity[]
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -57,9 +58,9 @@ export function RoomDetailModal({ room, onClose, onAssign }: Props) {
             <div>
               <p className="text-xl font-bold" style={{ color: NAVY }}>{room.room_number}</p>
               <div className="flex items-center gap-2 mt-1">
-                {rt && (
+                {room.room_type_name && (
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
-                    {rt.name}
+                    {room.room_type_name}
                   </span>
                 )}
                 <span
@@ -76,20 +77,20 @@ export function RoomDetailModal({ room, onClose, onAssign }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-xl p-3.5">
               <p className="text-xs text-gray-400 mb-1">Tầng</p>
-              <p className="font-semibold text-gray-800">Tầng {room.floor}</p>
+              <p className="font-semibold text-gray-800">Tầng {room.floor ?? '-'}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3.5">
               <p className="text-xs text-gray-400 mb-1">Diện tích</p>
-              <p className="font-semibold text-gray-800">{rt?.area_sqm ?? '?'}m²</p>
+              <p className="font-semibold text-gray-800">{room.area ?? '?'}m²</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3.5">
               <p className="text-xs text-gray-400 mb-1">Loại phòng</p>
-              <p className="font-semibold text-gray-800">{rt?.name ?? '—'}</p>
+              <p className="font-semibold text-gray-800">{room.room_type_name ?? '—'}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3.5">
               <p className="text-xs text-gray-400 mb-1">Giá thuê</p>
               <p className="font-semibold" style={{ color: '#d97706' }}>
-                {rt ? formatVND(rt.base_price) : '—'}/tháng
+                {room.price != null ? formatVND(room.price) : '—'}/tháng
               </p>
             </div>
           </div>
@@ -97,7 +98,9 @@ export function RoomDetailModal({ room, onClose, onAssign }: Props) {
           {/* Amenities */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Tiện nghi</p>
-            {roomAmenities.length === 0 ? (
+            {room.amenity_ids === undefined ? (
+              <p className="text-sm text-gray-400 italic">Amenity data is not provided by the rooms API.</p>
+            ) : roomAmenities.length === 0 ? (
               <p className="text-sm text-gray-400 italic">Chưa có tiện nghi</p>
             ) : (
               <div className="flex flex-wrap gap-2">

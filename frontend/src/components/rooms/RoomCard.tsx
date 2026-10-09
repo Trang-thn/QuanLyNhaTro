@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Room, RoomMenuAction } from '../../types/rooms'
-import { roomTypes, amenities as allAmenities, formatVND } from '../../data/mockData'
+import { amenities as allAmenities, formatVND } from '../../data/mockData'
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   DANG_THUE: { label: 'Đang thuê', bg: '#dbeafe', color: '#1d4ed8' },
@@ -93,10 +93,9 @@ export function RoomCard({ room, onAction }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const rt = roomTypes.find(t => t.id === room.room_type_id)
-  const statusCfg = STATUS_CONFIG[room.status] ?? STATUS_CONFIG.TRONG
+  const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
 
-  const roomAmenities = room.amenity_ids
+  const roomAmenities = (room.amenity_ids ?? [])
     .flatMap(id => {
       const found = allAmenities.find(a => a.id === id)
       return found ? [found] : []
@@ -128,9 +127,9 @@ export function RoomCard({ room, onAction }: Props) {
         <span className="font-bold text-base leading-tight" style={{ color: '#0d2137' }}>
           {room.room_number}
         </span>
-        {rt && (
+        {room.room_type_name && (
           <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 shrink-0">
-            {ROOM_TYPE_SHORT[rt.name] ?? rt.name}
+            {ROOM_TYPE_SHORT[room.room_type_name ?? ''] ?? room.room_type_name}
           </span>
         )}
         <div className="flex-1" />
@@ -143,15 +142,15 @@ export function RoomCard({ room, onAction }: Props) {
       </div>
 
       {/* Price */}
-      {rt && (
+      {room.price != null && (
         <p className="font-bold text-base" style={{ color: '#d97706', fontVariantNumeric: 'tabular-nums' }}>
-          {formatVND(rt.base_price)}/tháng
+          {formatVND(room.price)}/tháng
         </p>
       )}
 
       {/* Floor + Area */}
       <p className="text-sm text-gray-500">
-        Tầng {room.floor} • Diện tích: {rt?.area_sqm ?? '?'}m²
+        Tầng {room.floor ?? '-'} • Diện tích: {room.area ?? '?'}m²
       </p>
 
       {/* Divider */}

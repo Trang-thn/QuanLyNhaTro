@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { roomTypes } from '../../data/mockData'
+import type { RoomTypeApiDTO } from '../../types/rooms'
 
 const NAVY = '#0d2137'
 
@@ -8,9 +8,12 @@ interface Props {
   onChange: (id: string) => void
   error?: string
   showArea?: boolean
+  roomTypes: RoomTypeApiDTO[]
+  loading?: boolean
+  loadError?: string | null
 }
 
-export function RoomTypeDropdown({ value, onChange, error, showArea = false }: Props) {
+export function RoomTypeDropdown({ value, onChange, error, showArea = false, roomTypes, loading = false, loadError }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -36,7 +39,8 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false }: P
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={() => { if (!loading && !loadError && roomTypes.length > 0) setOpen(v => !v) }}
+        disabled={loading || !!loadError || roomTypes.length === 0}
         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition text-left
           ${error
             ? 'border-red-400 bg-red-50'
@@ -47,8 +51,11 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false }: P
       >
         <span className={selected ? 'text-gray-800' : 'text-gray-400'}>
           {selected
-            ? showArea ? `${selected.name} — ${selected.area_sqm}m²` : selected.name
-            : 'Chọn loại phòng'}
+            ? showArea ? `${selected.name} — ${selected.area_sqm ?? 'Chưa có diện tích'}${selected.area_sqm == null ? '' : 'm²'}` : selected.name
+            : loading ? 'Đang tải loại phòng...'
+              : loadError ? 'Không tải được loại phòng'
+                : roomTypes.length === 0 ? 'Chưa có loại phòng'
+                  : 'Chọn loại phòng'}
         </span>
         <svg
           className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
@@ -92,6 +99,8 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false }: P
         </div>
       )}
 
+      {loadError && <p role="alert" className="mt-1 text-xs text-red-500">{loadError}</p>}
+      {!loading && !loadError && roomTypes.length === 0 && <p className="mt-1 text-xs text-gray-500">API chưa trả về loại phòng nào.</p>}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   )
