@@ -81,7 +81,7 @@ function validateRoomBody(body: unknown, partial: boolean) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Request body must be an object';
   const value = body as Record<string, unknown>;
   const allowed = partial
-    ? ['room_number', 'room_type_id', 'status', 'floor', 'description']
+    ? ['room_number', 'room_type_id', 'floor', 'description']
     : ['room_number', 'room_type_id', 'new_room_type', 'status', 'floor', 'description'];
   if (Object.keys(value).some((key) => !allowed.includes(key))) return 'Request contains unsupported fields';
   if (!partial && (typeof value.room_number !== 'string' || !value.room_number.trim())) return 'room_number is required';
@@ -102,7 +102,7 @@ function validateRoomBody(body: unknown, partial: boolean) {
     if (newType.area_sqm !== undefined && newType.area_sqm !== null && (typeof newType.area_sqm !== 'number' || !Number.isFinite(newType.area_sqm) || newType.area_sqm <= 0 || newType.area_sqm > 999.99)) return 'new_room_type.area_sqm must be a positive number up to 999.99';
     if (newType.description !== undefined && newType.description !== null && typeof newType.description !== 'string') return 'new_room_type.description must be a string or null';
   }
-  if (value.status !== undefined && (typeof value.status !== 'string' || !value.status.trim() || value.status.trim().length > 20)) return 'status must contain 1 to 20 characters';
+  if (value.status !== undefined && (typeof value.status !== 'string' || !['TRONG', 'BAO_TRI'].includes(value.status.trim()))) return 'status must be TRONG or BAO_TRI';
   if (value.floor !== undefined && (!Number.isInteger(value.floor) || (value.floor as number) < 1)) return 'floor must be a positive integer';
   if (value.description !== undefined && value.description !== null && typeof value.description !== 'string') return 'description must be a string or null';
   if (partial && Object.keys(value).length === 0) return 'At least one field is required';
@@ -126,8 +126,11 @@ export async function updateRoom(req: Request, res: Response) {
 
 export async function updateRoomStatus(req: Request, res: Response) {
   if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid room id' });
-  if (!req.body || typeof req.body.status !== 'string' || !req.body.status.trim() || req.body.status.trim().length > 20 || Object.keys(req.body).some((key) => key !== 'status')) {
-    return res.status(400).json({ message: 'status must contain 1 to 20 characters' });
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body) || typeof req.body.status !== 'string' || Object.keys(req.body).some((key) => key !== 'status')) {
+    return res.status(400).json({ message: 'Request body must contain only a status string' });
+  }
+  if (!['TRONG', 'BAO_TRI'].includes(req.body.status.trim())) {
+    return res.status(400).json({ message: 'status must be TRONG or BAO_TRI; DANG_THUE is managed by active contracts' });
   }
   try { return res.json({ data: await roomsService.updateRoomStatus(req.params.id, req.body.status.trim()) }); }
   catch (error) { return sendError(res, error); }

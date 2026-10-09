@@ -1,4 +1,4 @@
-import { ResultSetHeader } from 'mysql2';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../config/database';
 import type { CountQueryRow, CreateRoomInput, CreateRoomTypeInput, RoomListFilters, RoomListResponse, RoomRecord, RoomTypeRecord, UpdateRoomInput, UpdateRoomTypeInput } from '../types/rooms';
@@ -7,7 +7,18 @@ export class RoomServiceError extends Error {
   constructor(public statusCode: number, message: string) { super(message); }
 }
 
-const roomSelect = `SELECT r.id, r.room_number, r.room_type_id, r.status, r.floor, r.description, r.created_at,
+interface IdRow extends RowDataPacket { id: string; }
+
+const activeContract = `EXISTS (
+  SELECT 1 FROM contracts c
+  WHERE c.room_id = r.id AND c.status = 'HIEU_LUC'
+    AND c.start_date <= CURRENT_DATE AND c.end_date >= CURRENT_DATE
+)`;
+const effectiveRoomStatus = `CASE WHEN ${activeContract} THEN 'DANG_THUE' WHEN r.status = 'DANG_THUE' THEN 'TRONG' ELSE r.status END`;
+
+const roomSelect = `SELECT r.id, r.room_number, r.room_type_id,
+  ${effectiveRoomStatus} AS status,
+  ${activeContract} AS has_active_contract, r.floor, r.description, r.created_at,
   rt.name AS room_type_name, rt.base_price, rt.area_sqm
   FROM rooms r LEFT JOIN room_types rt ON rt.id = r.room_type_id`;
 
@@ -15,7 +26,7 @@ export async function listRooms(filters: RoomListFilters): Promise<RoomListRespo
   const conditions: string[] = [];
   const values: Array<string | number> = [];
   if (filters.floor !== undefined) { conditions.push('r.floor = ?'); values.push(filters.floor); }
-  if (filters.status !== undefined) { conditions.push('r.status = ?'); values.push(filters.status); }
+  if (filters.status !== undefined) { conditions.push(`${effectiveRoomStatus} = ?`); values.push(filters.status); }
   const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
   const [rows] = await pool.query<RoomRecord[]>(`${roomSelect}${where} ORDER BY r.floor, r.room_number LIMIT ? OFFSET ?`, [...values, filters.limit, (filters.page - 1) * filters.limit]);
   const [count] = await pool.query<CountQueryRow[]>(`SELECT COUNT(*) AS total FROM rooms r${where}`, values);
@@ -119,6 +130,9 @@ export async function createRoom(input: CreateRoomInput) {
 }
 
 export async function updateRoom(id: string, input: UpdateRoomInput) {
+  if (input.status !== undefined) {
+    throw new RoomServiceError(400, 'Update room status through the status endpoint');
+  }
   const fields: string[] = [];
   const values: Array<string | number | null> = [];
   for (const key of ['room_number', 'room_type_id', 'status', 'floor', 'description'] as const) {
@@ -133,7 +147,38 @@ export async function updateRoom(id: string, input: UpdateRoomInput) {
 }
 
 export async function updateRoomStatus(id: string, status: string) {
-  await pool.execute('UPDATE rooms SET status = ? WHERE id = ?', [status, id]);
+  if (status !== 'TRONG' && status !== 'BAO_TRI') {
+    throw new RoomServiceError(400, 'Status must be TRONG or BAO_TRI; DANG_THUE is managed by active contracts');
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rooms] = await connection.query<IdRow[]>(
+      'SELECT id FROM rooms WHERE id = ? FOR UPDATE',
+      [id],
+    );
+    if (!rooms[0]) throw new RoomServiceError(404, 'Room not found');
+
+    const [contracts] = await connection.query<IdRow[]>(
+      `SELECT id FROM contracts
+       WHERE room_id = ? AND status = 'HIEU_LUC'
+         AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE
+       LIMIT 1 FOR UPDATE`,
+      [id],
+    );
+    if (contracts[0]) {
+      throw new RoomServiceError(409, 'Room has an active contract; its status is managed by the contract');
+    }
+
+    await connection.execute('UPDATE rooms SET status = ? WHERE id = ?', [status, id]);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
   return getRoom(id);
 }
 

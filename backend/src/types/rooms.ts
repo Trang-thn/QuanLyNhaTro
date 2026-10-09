@@ -7,6 +7,7 @@ export interface RoomRecord extends RowDataPacket {
   room_number: string;
   room_type_id: string | null;
   status: RoomStatus | null;
+  has_active_contract?: number | boolean;
   floor: number | null;
   description: string | null;
   created_at: Date;
