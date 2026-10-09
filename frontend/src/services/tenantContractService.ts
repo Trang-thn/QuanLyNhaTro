@@ -1,4 +1,4 @@
-import api from './api';
+import { apiRequest } from './api';
 import { Tenant } from './tenantService';
 import { Contract } from './contractService';
 
@@ -20,29 +20,28 @@ export interface AddMemberPayload {
 
 export const tenantContractService = {
   // Lấy toàn bộ thông tin phòng, thành viên & hợp đồng hiện tại (Cho TenantContractsPage)
-  getRoomContractDetails: async (roomId: string): Promise<RoomDetailWithContract> => {
-    const res = await api.get(`/room-contracts/${roomId}`);
-    return res.data;
-  },
+  getRoomContractDetails: (roomId: string) => 
+    apiRequest<RoomDetailWithContract>(`/room-contracts/${roomId}`),
 
   // Thêm thành viên vào phòng/hợp đồng (Dùng cho MemberList)
-  addMemberToContract: async (payload: AddMemberPayload): Promise<void> => {
-    await api.post('/room-contracts/members', payload);
-  },
+  addMemberToContract: (payload: AddMemberPayload) => 
+    apiRequest<void>('/room-contracts/members', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 
   // Xóa/Mời thành viên ra khỏi phòng
-  removeMemberFromContract: async (contractId: string, tenantId: string): Promise<void> => {
-    await api.delete(`/room-contracts/${contractId}/members/${tenantId}`);
-  },
+  removeMemberFromContract: (contractId: string, tenantId: string) => 
+    apiRequest<void>(`/room-contracts/${contractId}/members/${tenantId}`, {
+      method: 'DELETE',
+    }),
 
   // Lấy thông tin cá nhân + Phòng thuê của Tenant hiện tại (Cho TenantProfile.tsx & GET /api/v1/users/me)
-  getMyProfileAndRoom: async (): Promise<{
-    userProfile: any;
-    tenantInfo: Tenant | null;
-    contractInfo: Contract | null;
-    roomMembers: Tenant[];
-  }> => {
-    const res = await api.get('/users/me');
-    return res.data;
-  },
+  getMyProfileAndRoom: () => 
+    apiRequest<{
+      userProfile: any;
+      tenantInfo: Tenant | null;
+      contractInfo: Contract | null;
+      roomMembers: Tenant[];
+    }>('/users/me'),
 };
