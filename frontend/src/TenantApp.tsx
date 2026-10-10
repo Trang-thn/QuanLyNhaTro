@@ -2,10 +2,10 @@ import { useState } from 'react'
 import TenantDashboard from './pages/TenantDashboard'
 import TenantProfile from './pages/TenantProfile'
 import TenantContracts from './pages/TenantContracts'
-import Invoices from './pages/Invoices'
-import Maintenance from './pages/Maintenance'
-import Notifications from './pages/Notifications'
-import Settings from './pages/Settings'
+//import Invoices from './pages/Invoices'
+//import Maintenance from './pages/Maintenance'
+//import Notifications from './pages/Notifications'
+//import Settings from './pages/Settings'
 
 type TenantPage = 'dashboard' | 'profile' | 'contracts' | 'invoices' | 'incidents' | 'settings'
 
@@ -177,9 +177,9 @@ export default function TenantApp({ onLogout }: Props) {
           {currentPage === 'dashboard' && <TenantDashboard linked={true} />}
           {currentPage === 'profile'   && <TenantProfile />}
           {currentPage === 'contracts' && <TenantContracts />}
-          {currentPage === 'invoices'  && <Invoices />}
-          {currentPage === 'incidents' && <Maintenance />}
-          {currentPage === 'settings'  && <Settings />}
+         {/* {currentPage === 'invoices'  && <Invoices />} */}
+          {/* {currentPage === 'incidents' && <Maintenance />} */}
+          {/* {currentPage === 'settings'  && <Settings />} */}
         </main>
       </div>
 

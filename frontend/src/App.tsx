@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import Rooms from './pages/Rooms'
+//import Rooms from './pages/Rooms'
 import Tenants from './pages/Tenants'
 import Contracts from './pages/Contracts'
-import Invoices from './pages/Invoices'
-import Maintenance from './pages/Maintenance'
-import Notifications from './pages/Notifications'
+//import Invoices from './pages/Invoices'
+//import Maintenance from './pages/Maintenance'
+//import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
-import Utilities from './pages/Utilities'
+//import Utilities from './pages/Utilities'
 import TenantApp from './TenantApp'
 import { notifications as allNotifications } from './data/mockData'
 
@@ -402,15 +402,15 @@ export default function App() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-6">
-          {currentPage === 'dashboard'      && <Dashboard />}
-          {currentPage === 'rooms'          && <Rooms />}
+         {/* {currentPage === 'dashboard'      && <Dashboard />}*/}
+         {/* {currentPage === 'rooms'          && <Rooms />}*/}
           {currentPage === 'tenants'        && <Tenants />}
           {currentPage === 'contracts'      && <Contracts />}
-          {currentPage === 'invoices'       && <Invoices />}
-          {currentPage === 'utilities'      && <Utilities />}
-          {currentPage === 'maintenance'    && <Maintenance />}
-          {currentPage === 'notifications'  && <Notifications />}
-          {currentPage === 'settings'       && <Settings />}
+         {/* {currentPage === 'invoices'       && <Invoices />}*/}
+         {/* {currentPage === 'utilities'      && <Utilities />}*/}
+        {/* {currentPage === 'maintenance'    && <Maintenance />}*/}
+         {/* {currentPage === 'notifications'  && <Notifications />}*/}
+         {/* {currentPage === 'settings'       && <Settings />}*/}
         </main>
       </div>
 

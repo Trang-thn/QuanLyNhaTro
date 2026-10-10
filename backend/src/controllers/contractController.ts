@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import pool from '../config/database';
+import {pool} from '../config/database';
 import { RowDataPacket } from 'mysql2';
 
 // 1. Lấy tất cả hợp đồng
@@ -23,12 +23,14 @@ export const getAllContracts = async (_req: Request, res: Response) => {
       data: rows
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống máy chủ',
-      data: null
-    });
-  }
+  console.error("🔥 LỖI DATABASE CHI TIẾT:", error); // In ra màn hình Terminal Backend
+  return res.status(500).json({
+    success: false,
+    message: 'Lỗi hệ thống máy chủ',
+    errorDetails: error.message, // Hiển thị nguyên nhân lỗi thực sự
+    data: null
+  });
+}
 };
 
 // 2. Tạo hợp đồng mới (Dùng TRANSACTION)
