@@ -6,7 +6,7 @@ import {
   getInvoiceContract,
   getInvoiceReadings
 } from '../../types/invoice/invoice'
-import { getTenantName, getRoomNumber, formatVND } from'../../data/mockData'
+import { getTenantName, getRoomNumber, formatVND } from '../../data/mockData'
 
 export function InvoiceExportModal({ inv, onClose }: { inv: InvoiceItem; onClose: () => void }) {
   const contract  = getInvoiceContract(inv)
@@ -17,30 +17,34 @@ export function InvoiceExportModal({ inv, onClose }: { inv: InvoiceItem; onClose
   const s         = invoiceStatusConfig[inv.status] ?? invoiceStatusConfig.CHUA_THANH_TOAN
 
   const rows = [
-    { khoang: 'Tiền phòng',    chitiet: '—',                                                                           thanh: inv.room_price },
-    { khoang: 'Tiền điện',     chitiet: `${r.prevElec} đến ${r.newElec} (${r.elecKwh} kWh × 3.500 đ)`,               thanh: inv.electricity_cost },
-    { khoang: 'Tiền nước',     chitiet: `${r.prevWater} đến ${r.newWater} (${r.waterM3} m³ × 15.000 đ)`,              thanh: inv.water_cost },
-    { khoang: 'Dịch vụ khác',  chitiet: 'Wifi, rác',                                                                   thanh: inv.other_service_cost },
+    { khoang: 'Tiền phòng',    chitiet: '—',                                                                             thanh: inv.room_price },
+    { khoang: 'Tiền điện',     chitiet: `${r.prevElec} đến ${r.newElec} (${r.elecKwh} kWh × 3.500 đ)`,                     thanh: inv.electricity_cost },
+    { khoang: 'Tiền nước',     chitiet: `${r.prevWater} đến ${r.newWater} (${r.waterM3} m³ × 15.000 đ)`,                   thanh: inv.water_cost },
+    { khoang: 'Dịch vụ khác',  chitiet: 'Wifi, rác',                                                                     thanh: inv.other_service_cost },
   ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="px-6 pt-6 pb-4 text-center border-b border-gray-100">
+      {/* Thêm max-h-[90vh], flex flex-col và overflow-hidden để giới hạn chiều cao modal */}
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        
+        {/* Header cố định */}
+        <div className="px-6 pt-5 pb-3 text-center border-b border-gray-100 shrink-0">
           <h3 className="font-bold text-base" style={{ color: INVOICE_NAVY_COLOR }}>
             Hóa đơn tiền phòng tháng {inv.billing_month}/{inv.billing_year}
           </h3>
           <p className="text-xs mt-0.5" style={{ color: INVOICE_AMBER_COLOR }}>{inv.invoice_code}</p>
         </div>
 
-        <div className="px-6 py-4 space-y-4">
-          <div className="space-y-2.5">
+        {/* Phần nội dung có thể cuộn dọc khi bị tràn màn hình (overflow-y-auto) */}
+        <div className="px-6 py-4 space-y-3 overflow-y-auto flex-1">
+          <div className="space-y-2">
             {[
               { label: 'Phòng', value: room },
               { label: 'Người thuê', value: tenant },
               { label: 'Hạn thanh toán', value: inv.due_date.split('-').reverse().join('/') },
             ].map(f => (
-              <div key={f.label} className="flex justify-between items-center py-2 border-b border-dashed border-gray-200">
+              <div key={f.label} className="flex justify-between items-center py-1.5 border-b border-dashed border-gray-200">
                 <span className="text-sm text-gray-500">{f.label}</span>
                 <span className="text-sm font-semibold text-gray-800">{f.value}</span>
               </div>
@@ -58,9 +62,9 @@ export function InvoiceExportModal({ inv, onClose }: { inv: InvoiceItem; onClose
             <tbody>
               {rows.map(row => (
                 <tr key={row.khoang} className="border-b border-gray-50">
-                  <td className="px-3 py-2.5 text-gray-700 font-medium whitespace-nowrap">{row.khoang}</td>
-                  <td className="px-3 py-2.5 text-gray-400 text-xs">{row.chitiet}</td>
-                  <td className="px-3 py-2.5 text-right font-medium text-gray-700 whitespace-nowrap">{formatVND(row.thanh)}</td>
+                  <td className="px-3 py-2 text-gray-700 font-medium whitespace-nowrap">{row.khoang}</td>
+                  <td className="px-3 py-2 text-gray-400 text-xs">{row.chitiet}</td>
+                  <td className="px-3 py-2 text-right font-medium text-gray-700 whitespace-nowrap">{formatVND(row.thanh)}</td>
                 </tr>
               ))}
             </tbody>
@@ -93,7 +97,8 @@ export function InvoiceExportModal({ inv, onClose }: { inv: InvoiceItem; onClose
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100 flex gap-2">
+        {/* Footer cố định */}
+        <div className="px-6 py-3 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
           <button onClick={onClose} className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Đóng</button>
           <button className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition flex-1">Sao chép để gửi khách</button>
           <button className="px-3 py-2 rounded-lg text-white text-sm font-semibold transition flex-1" style={{ background: INVOICE_NAVY_COLOR }}

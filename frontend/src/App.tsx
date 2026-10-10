@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import Rooms from './pages/Rooms'
-import Tenants from './pages/Tenants'
-import Contracts from './pages/Contracts'
-import Invoices from './pages/Invoices'
-import Maintenance from './pages/Maintenance'
-import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
-import Utilities from './pages/Utilities'
-import TenantApp from './TenantApp'
+import Utilities from './pages/Utilities/Utilities'
+
+import Invoices from './pages/invoice/Invoices'
+
+//import TenantApp from './TenantApp'
 import { notifications as allNotifications } from './data/mockData'
 
 type Page = 'dashboard' | 'rooms' | 'tenants' | 'contracts' | 'invoices' | 'utilities' | 'maintenance' | 'notifications' | 'settings'
@@ -339,9 +336,9 @@ export default function App() {
     return <Login onLogin={(r) => { setRole(r); setCurrentPage('dashboard') }} />
   }
 
-  if (role === 'tenant') {
-    return <TenantApp onLogout={() => setRole(null)} />
-  }
+  // if (role === 'tenant') {
+  //   return <TenantApp onLogout={() => setRole(null)} />
+  // }
 
   const unreadCount = allNotifications.filter(n => !n.is_read).length
   const pageTitle = pageTitles[currentPage]
@@ -403,13 +400,13 @@ export default function App() {
         {/* Main content */}
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard'      && <Dashboard />}
-          {currentPage === 'rooms'          && <Rooms />}
-          {currentPage === 'tenants'        && <Tenants />}
-          {currentPage === 'contracts'      && <Contracts />}
+          
+         
+         
           {currentPage === 'invoices'       && <Invoices />}
           {currentPage === 'utilities'      && <Utilities />}
-          {currentPage === 'maintenance'    && <Maintenance />}
-          {currentPage === 'notifications'  && <Notifications />}
+          
+   
           {currentPage === 'settings'       && <Settings />}
         </main>
       </div>
