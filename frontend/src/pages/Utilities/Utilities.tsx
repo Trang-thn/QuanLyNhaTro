@@ -1,31 +1,66 @@
 import { useState, useEffect } from 'react'
 import { AMBER, NAVY } from '../../types/Utilities/utility'
-import type { UtilityRow } from '../../types/Utilities/utility'
+import type { UtilityRow, Status } from '../../types/Utilities/utility'
 import UtilityModal from '../../components/Utilities/UtilityFormModal'
 import UtilityTable from '../../components/Utilities/UtilityTable'
+import { saveUtilityReading, updateUtilityReading, fetchUtilityReadings } from '../../services/Utilities'
 
-const initialRows: UtilityRow[] = [
-  { id: '1', tenantName: 'Nguyễn Văn An',        room: 'P101', prevElec: 1200, newElec: 1285, prevWater: 45, newWater: 52, dateRecorded: '28/09/2026', status: 'co_hoa_don' },
-  { id: '2', tenantName: 'Trần Thị Bích',         room: 'P102', prevElec: 980,  newElec: 1042, prevWater: 38, newWater: 38, dateRecorded: '28/09/2026', status: 'da_nhap' },
-  { id: '3', tenantName: 'Lê Đức Huy',            room: 'P203', prevElec: 1285, newElec: null,  prevWater: 52, newWater: null, dateRecorded: null, status: 'chua_nhap' },
-  { id: '4', tenantName: 'Phạm Minh Châu',        room: 'P204', prevElec: 620,  newElec: null,  prevWater: 30, newWater: null, dateRecorded: null, status: 'chua_nhap' },
-  { id: '5', tenantName: 'Nguyễn Ngọc Hà',        room: 'P301', prevElec: 870,  newElec: null,  prevWater: 41, newWater: null, dateRecorded: null, status: 'chua_nhap' },
-  { id: '6', tenantName: 'Trần Quốc Long',         room: 'P302', prevElec: 1100, newElec: null,  prevWater: 48, newWater: null, dateRecorded: null, status: 'chua_nhap' },
-  { id: '7', tenantName: 'Phòng Gia Bảo (thuê mới)', room: 'P303', prevElec: 0,  newElec: null, prevWater: 0,  newWater: null, dateRecorded: null, status: 'chua_nhap' },
-]
+const statusMap: Record<string, Status> = {
+  DA_CO_HOA_DON: 'co_hoa_don',
+  DA_NHAP: 'da_nhap',
+  CHUA_NHAP: 'chua_nhap',
+}
+const toNum = (v: any) => (v === null || v === undefined ? null : Number(v))
 
-/* ─── Main page ─── */
 export default function Utilities() {
-  const [rows, setRows] = useState<UtilityRow[]>(initialRows)
-  const [search, setSearch]   = useState('')
-  const [month, setMonth]     = useState('9')
-  const [year, setYear]       = useState('2026')
+  const now = new Date()
+  const [rows, setRows] = useState<UtilityRow[]>([])
+  const [search, setSearch] = useState('')
+  const [month, setMonth] = useState(String(now.getMonth() + 1))
+  const [year, setYear] = useState(String(now.getFullYear()))
   const [roomFilter, setRoomFilter] = useState('all')
   const [modal, setModal] = useState<{ row: UtilityRow; mode: 'nhap' | 'sua' } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   const entered = rows.filter(r => r.status !== 'chua_nhap').length
-  const total   = rows.length
-  const period  = `Tháng ${month} ${year}`
+  const total = rows.length
+  const period = `Tháng ${month} ${year}`
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadData() {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await fetchUtilityReadings({ month: parseInt(month, 10), year: parseInt(year, 10) })
+        if (cancelled) return
+        setRows(data.map((item: any): UtilityRow => ({
+          id: String(item.room_id),
+          roomId: item.room_id,
+          readingId: item.reading_id ?? null,
+          tenantName: item.tenant_name || '',
+          room: item.room_number,
+          prevElec: toNum(item.old_electricity_kwh),
+          newElec: toNum(item.new_electricity_kwh),
+          prevWater: toNum(item.old_water_m3),
+          newWater: toNum(item.new_water_m3),
+          dateRecorded: item.recorded_date ?? null,
+          status: statusMap[item.current_status] ?? 'chua_nhap',
+        })))
+      } catch (e: any) {
+        if (!cancelled) {
+          setRows([])
+          setError(e.message || 'Không tải được dữ liệu điện nước')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadData()
+    return () => { cancelled = true }
+  }, [month, year, reloadKey])
 
   const filtered = rows.filter(r => {
     const q = search.toLowerCase()
@@ -34,14 +69,36 @@ export default function Utilities() {
     return matchSearch && matchRoom
   })
 
-  function handleSave(id: string, newElec: number, newWater: number, date: string) {
-    setRows(prev => prev.map(r => {
-      if (r.id !== id) return r
-      const wasChuaNhap = r.status === 'chua_nhap'
-      return { ...r, newElec, newWater, dateRecorded: date, status: wasChuaNhap ? 'da_nhap' : r.status }
-    }))
-    setModal(null)
+  async function handleSave(id: string, newElec: number, newWater: number, date: string) {
+    const row = rows.find(r => r.id === id)
+    if (!row) return
+    try {
+      if (row.readingId) {
+        await updateUtilityReading(row.readingId, {
+          new_electricity_kwh: newElec,
+          new_water_m3: newWater,
+          recorded_date: date,
+        })
+      } else {
+        await saveUtilityReading({
+          room_id: row.roomId,
+          billing_month: parseInt(month, 10),
+          billing_year: parseInt(year, 10),
+          old_electricity_kwh: row.prevElec ?? 0,
+          new_electricity_kwh: newElec,
+          old_water_m3: row.prevWater ?? 0,
+          new_water_m3: newWater,
+          recorded_date: date,
+        })
+      }
+      setModal(null)
+      setReloadKey(k => k + 1) // tải lại từ DB để lấy reading_id, trạng thái thật
+    } catch (e: any) {
+      alert(e.message || 'Không thể lưu vào cơ sở dữ liệu!')
+    }
   }
+
+  // ... phần JSX giữ nguyên
 
   const months = ['1','2','3','4','5','6','7','8','9','10','11','12']
   const years  = ['2025','2026','2027']
@@ -94,7 +151,8 @@ export default function Utilities() {
               const firstUnrecorded = rows.find(r => r.status === 'chua_nhap')
               if (firstUnrecorded) setModal({ row: firstUnrecorded, mode: 'nhap' })
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold transition shrink-0"
+            disabled={loading}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: NAVY }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

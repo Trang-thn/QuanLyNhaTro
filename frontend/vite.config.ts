@@ -31,20 +31,20 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
-      strictPort: false,
+      port: parseInt(process.env.PORT || '8445'),
+      strictPort: true,
       watch: {
         ignored: ['**/.figma/**'],
       },
-      // Proxy chuyển tiếp API call sang Backend từ File 1
+      // Bổ sung Proxy để tự động chuyển hướng API sang Backend (Cổng 3000)
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         },
-        '/health': {
-          target: 'http://localhost:5000',
+        '/utilities': {
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         },

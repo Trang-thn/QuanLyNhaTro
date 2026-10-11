@@ -1,4 +1,4 @@
-import { AMBER, NAVY, statusConfig } from '../../types/Utilities/utility'
+import { AMBER, NAVY, statusConfig, formatDate } from '../../types/Utilities/utility'
 import type { UtilityRow } from '../../types/Utilities/utility'
 
 interface UtilityTableProps {
@@ -49,7 +49,9 @@ export default function UtilityTable({ filtered, entered, total, setModal }: Uti
                       ? <span className="font-semibold" style={{ color: NAVY }}>{consumption.water}</span>
                       : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{row.dateRecorded ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">
+                  {row.dateRecorded ? formatDate(row.dateRecorded) : <span className="text-gray-300">—</span>}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap"
                       style={{ background: s.bg, color: s.color, borderColor: s.border }}>

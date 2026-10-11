@@ -194,7 +194,7 @@ export default function UtilityModal({ row, mode, period, onClose, onSave }: Inp
               <div>
                 <label className="text-xs font-semibold text-gray-600 block mb-1">Ngày ghi <span style={{ color: '#e53e3e' }}>*</span></label>
                 <input
-                  type="text" placeholder="dd/mm/yyyy"
+                  type="date" placeholder="dd/mm/yyyy"
                   value={date}
                   onChange={e => setDate(e.target.value)}
                   onBlur={() => setTouched(t => ({ ...t, date: true }))}

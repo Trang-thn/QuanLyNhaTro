@@ -5,13 +5,15 @@ export type Status = 'co_hoa_don' | 'da_nhap' | 'chua_nhap'
 
 export interface UtilityRow {
   id: string
+  roomId: number
+  readingId: number | null
   tenantName: string
   room: string
   prevElec: number | null
   newElec: number | null
   prevWater: number | null
   newWater: number | null
-  dateRecorded: string | null
+  dateRecorded: string | null // yyyy-mm-dd
   status: Status
 }
 
@@ -20,3 +22,5 @@ export const statusConfig: Record<Status, { label: string; bg: string; color: st
   da_nhap:    { label: 'Đã nhập',        bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
   chua_nhap:  { label: 'Chưa nhập',      bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
 }
+
+export const formatDate = (iso: string) => iso.split('-').reverse().join('/')
