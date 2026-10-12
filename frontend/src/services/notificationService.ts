@@ -15,10 +15,14 @@ async function notificationRequest<T>(path: string, init?: RequestInit) {
   } catch (error) {
     if (error instanceof RoomApiError) {
       if (error.code === 'AUTH_NOT_CONFIGURED') {
-        throw new Error('Chưa kết nối token đăng nhập chung; API Thông báo chưa được gọi.')
+        throw new Error('Chưa kết nối token đăng nhập dùng chung; chưa thể gọi API Thông báo.')
       }
-      if (error.status === 400) throw new Error('Dữ liệu thông báo không hợp lệ.')
+      if (error.status === 400) throw new Error('Dữ liệu thông báo không hợp lệ. Vui lòng kiểm tra lại nội dung và người nhận.')
+      if (error.status === 401) throw new Error('Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.')
+      if (error.status === 403) throw new Error('Bạn không có quyền thực hiện thao tác này.')
       if (error.status === 404) throw new Error('Không tìm thấy thông báo hoặc đối tượng liên quan.')
+      if (error.status === 409) throw new Error('Không có người thuê phù hợp với phạm vi đã chọn. Vui lòng kiểm tra người nhận hoặc phòng.')
+      if (error.status !== null && error.status >= 500) throw new Error('Máy chủ đang gặp lỗi. Vui lòng thử lại sau.')
     }
     throw error
   }

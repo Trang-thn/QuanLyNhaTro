@@ -79,6 +79,14 @@ export async function listNotificationRecipients(): Promise<{
     `SELECT DISTINCT r.id, r.room_number
      FROM rooms r JOIN contracts c ON c.room_id = r.id
      WHERE c.status = 'HIEU_LUC' AND CURDATE() BETWEEN c.start_date AND c.end_date
+       AND EXISTS (
+         SELECT 1 FROM tenants t
+         JOIN users u ON u.id = t.user_id
+         WHERE u.role = 'TENANT' AND u.is_active = 1
+           AND (c.representative_tenant_id = t.id OR EXISTS (
+             SELECT 1 FROM contract_members cm WHERE cm.contract_id = c.id AND cm.tenant_id = t.id
+           ))
+       )
      ORDER BY r.room_number`,
   );
 

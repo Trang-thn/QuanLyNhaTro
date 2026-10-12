@@ -1,0 +1,6 @@
+interface:
+  display_name: "Phòng trọ"
+  short_description: "Hỗ trợ module Phòng trọ QuanLyNhaTro"
+  default_prompt: "Dùng $phongtro-module để khảo sát hoặc phát triển module Phòng trọ trong QuanLyNhaTro."
+policy:
+  allow_implicit_invocation: true

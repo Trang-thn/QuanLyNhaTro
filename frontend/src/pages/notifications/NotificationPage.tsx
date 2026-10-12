@@ -14,7 +14,8 @@ function mapSentNotification(item: NotificationApiDTO): Item {
     content: item.content,
     recipient,
     sentAt: Number.isNaN(date.getTime()) ? item.created_at : date.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
-    unread: false,
+    // Each sent row is a recipient-specific notification returned by the API.
+    unread: !(item.is_read === true || item.is_read === 1),
   }
 }
 
@@ -89,13 +90,13 @@ export default function NotificationPage() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không xóa được thông báo.') }
   }
   return <section className="mx-auto flex w-full max-w-[1136px] flex-col gap-6 font-['Inter:Regular']">
-    {error && modal === 'none' && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error} <button type="button" onClick={() => void refreshSent()} className="ml-2 font-bold underline">Retry</button></p>}
-    {loading && <p role="status" className="text-sm text-[#4f5e74]">Loading notifications...</p>}
+    {error && modal === 'none' && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error} <button type="button" onClick={() => void refreshSent()} className="ml-2 rounded font-bold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2">Thử lại</button></p>}
+    {loading && <p role="status" className="text-sm text-[#4f5e74]">Đang tải thông báo...</p>}
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <div className="flex gap-2 text-[13px]">
-          <span className="text-[#8c9bae]">Tổng quan</span>
-          <span className="text-[#8c9bae]">/</span>
+          <span className="text-[#4f5e74]">Tổng quan</span>
+          <span className="text-[#4f5e74]">/</span>
           <span className="font-['Inter:Bold'] font-bold text-[#172b4d]">Thông báo</span>
         </div>
         <p className="mt-3 font-['Inter:Extra_Bold'] text-[28px] font-extrabold text-[#1c2534]">Thông Báo</p>
@@ -110,6 +111,7 @@ export default function NotificationPage() {
         <div className="flex gap-2">
           <button
             type="button"
+            aria-pressed={tab === 'sent'}
             onClick={() => setTab('sent')}
             className={`rounded-lg px-4 py-2 text-[13px] ${tab === 'sent'
               ? "bg-[#f59e0b] font-['Inter:Bold'] font-bold text-white"
@@ -137,9 +139,9 @@ export default function NotificationPage() {
         <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_4px_8px_rgba(74,59,27,0.08)]">
           <div className="hidden grid-cols-[16px_minmax(0,1fr)_180px_160px] items-center gap-4 border-b border-[#eadfc9] bg-[#faf8f5] px-6 py-3.5 md:grid">
             <img src="/assets/35a49.svg" alt="" width="16" height="8" />
-            <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">NỘI DUNG THÔNG BÁO</p>
-            <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">ĐỐI TƯỢNG NHẬN</p>
-            <p className="text-right font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">THỜI GIAN GỬI</p>
+            <p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">NỘI DUNG THÔNG BÁO</p>
+            <p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">ĐỐI TƯỢNG NHẬN</p>
+            <p className="text-right font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">THỜI GIAN GỬI</p>
           </div>
           {
             visible.map(item => (
@@ -158,7 +160,7 @@ export default function NotificationPage() {
                 <button
                   type="button"
                   onClick={() => setSelected(item.id)}
-                  className="min-w-0 text-left"
+                  className="min-w-0 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2"
                 >
                   <p
                     className={`truncate text-[15px] text-[#1c2534] ${item.unread
@@ -185,7 +187,7 @@ export default function NotificationPage() {
                   </span>
                 </div>
 
-                <p className="col-start-2 text-xs text-[#8c9bae] md:col-auto md:text-right md:text-[13px]">
+                <p className="col-start-2 text-xs text-[#4f5e74] md:col-auto md:text-right md:text-[13px]">
                   {item.sentAt}
                 </p>
 

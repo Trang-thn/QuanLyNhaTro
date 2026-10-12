@@ -61,9 +61,9 @@ export default function TenantNotificationsPage() {
           <div className="mt-6 overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
             <div className="flex items-center justify-between px-6 py-5">
               <strong className="text-base text-[#1f2937]">Thông báo của tôi</strong>
-              <span className="text-xs text-[#8c9bae]">{unread} thông báo chưa đọc</span>
+              <span className="text-xs text-[#4f5e74]">{unread} thông báo chưa đọc</span>
             </div>{items.map(item =>
-              <button key={item.id} type="button" onClick={() => void openItem(item)} className={`relative flex w-full gap-4 border-t border-[#e5e7eb] p-6 text-left ${item.isRead ? 'bg-white' : 'bg-[#fffaf0]'}`}>
+              <button key={item.id} type="button" onClick={() => void openItem(item)} className={`relative flex w-full gap-4 border-t border-[#e5e7eb] p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d97706] ${item.isRead ? 'bg-white' : 'bg-[#fffaf0]'}`}>
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fff3df] text-[#d97706]" aria-hidden="true">
                   <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0H9m6 0v1a3 3 0 11-6 0v-1" /></svg>
                 </div>
@@ -71,8 +71,8 @@ export default function TenantNotificationsPage() {
                   <p className={`text-[15px] text-[#1f2937] ${item.isRead ? 'font-semibold' : 'font-bold'}`}>{item.title}</p>
                   <p className="mt-2 truncate text-[13px] text-[#4f5e74]">{item.preview}</p>
                   <div className="mt-2 flex gap-3 text-xs">
-                    <span className="text-[#8c9bae]">{item.createdAt}</span>
-                    <span className={item.isRead ? 'text-[#8c9bae]' : 'font-bold text-[#b45309]'}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span>
+                    <span className="text-[#4f5e74]">{item.createdAt}</span>
+                    <span className={item.isRead ? 'text-[#4f5e74]' : 'font-bold text-[#b45309]'}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span>
                   </div>
                 </div>
                 {!item.isRead && <img src="/assets/tenant-notification-unread.svg" alt="" width="7" height="7" className="absolute right-5 top-5" />}

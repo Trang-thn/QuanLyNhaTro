@@ -1,24 +1,26 @@
+import { useId } from "react"
 import type { TenantNotification } from "../../types/notifications"
 export function TenantNotificationDetailModal({ item, close }: { item: TenantNotification; close: () => void }) {
+  const titleId = useId()
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#172b4d]/40 p-4" role="dialog" aria-modal="true" onMouseDown={event => event.target === event.currentTarget && close()}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#172b4d]/40 p-4" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={event => event.target === event.currentTarget && close()}>
       <div className="max-h-[calc(100dvh-32px)] w-full max-w-[600px] overflow-y-auto rounded-2xl border border-[#e5e7eb] bg-white shadow-[0_12px_32px_rgba(23,43,77,0.18)]">
         <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-5">
-          <p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1f2937]">Chi tiết thông báo</p>
-          <button type="button" onClick={close} aria-label="Đóng" className="text-2xl font-light text-[#4f5e74]">×</button>
+          <p id={titleId} className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1f2937]">Chi tiết thông báo</p>
+          <button type="button" onClick={close} aria-label="Đóng" className="rounded text-2xl font-light text-[#4f5e74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2">×</button>
         </div>
         <div className="p-6">
-          <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">Tiêu đề</p>
+          <p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">Tiêu đề</p>
           <p className="mt-2 font-['Inter:Extra_Bold'] text-xl font-extrabold text-[#1f2937]">{item.title}</p>
           <div className="mt-5 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-[#8c9bae]">Thời gian</p>
+              <p className="text-xs font-bold text-[#4f5e74]">Thời gian</p>
               <p className="mt-1 text-sm text-[#4f5e74]">{item.createdAt}</p>
             </div>
             <span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${item.isRead ? 'bg-[#e6f4ea] text-[#16885b]' : 'bg-[#fef3c7] text-[#b45309]'}`}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span>
           </div>
           <div className="mt-6">
-            <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">Nội dung</p>
+            <p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">Nội dung</p>
             <div className="mt-3 space-y-4 text-sm leading-6 text-[#4f5e74]">
               {item.content.map((line, index) => <p key={index}>{line}</p>)}
               {item.deadline &&
@@ -42,7 +44,7 @@ export function TenantNotificationDropdown({ items, openItem, viewAll }: { items
   return (
     <div className="absolute right-[-52px] top-full z-50 mt-2 w-[400px] max-w-[calc(100vw-32px)] overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(23,43,77,0.13)] sm:right-0">
       <div className="flex items-center justify-between px-4 py-3.5"><strong className="text-sm text-[#1f2937]">Thông báo</strong><span className="rounded-full bg-[#fef3c7] px-2 py-1 text-[11px] font-bold text-[#b45309]">{unread} chưa đọc</span></div>
-      {items.slice(0, 3).map(item => <button key={item.id} type="button" onClick={() => openItem(item)} className={`relative block w-full border-t border-[#e5e7eb] p-4 text-left ${item.isRead ? 'bg-white' : 'bg-[#fffaf0]'}`}><p className={`pr-3 text-[13px] text-[#1f2937] ${item.isRead ? 'font-semibold' : 'font-bold'}`}>{item.title}</p><p className="mt-2 line-clamp-2 text-xs leading-5 text-[#4f5e74]">{item.preview}</p><div className="mt-2 flex gap-3 text-[11px]"><span className="text-[#8c9bae]">{item.createdAt}</span><span className={item.isRead ? 'text-[#8c9bae]' : 'font-bold text-[#b45309]'}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span></div>{!item.isRead && <img src="/assets/tenant-notification-unread.svg" alt="" width="7" height="7" className="absolute right-3 top-4" />}</button>)}
+      {items.slice(0, 3).map(item => <button key={item.id} type="button" onClick={() => openItem(item)} className={`relative block w-full border-t border-[#e5e7eb] p-4 text-left ${item.isRead ? 'bg-white' : 'bg-[#fffaf0]'}`}><p className={`pr-3 text-[13px] text-[#1f2937] ${item.isRead ? 'font-semibold' : 'font-bold'}`}>{item.title}</p><p className="mt-2 line-clamp-2 text-xs leading-5 text-[#4f5e74]">{item.preview}</p><div className="mt-2 flex gap-3 text-[11px]"><span className="text-[#4f5e74]">{item.createdAt}</span><span className={item.isRead ? 'text-[#4f5e74]' : 'font-bold text-[#b45309]'}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span></div>{!item.isRead && <img src="/assets/tenant-notification-unread.svg" alt="" width="7" height="7" className="absolute right-3 top-4" />}</button>)}
       <button type="button" onClick={viewAll} className="w-full border-t border-[#e5e7eb] py-4 text-center text-[13px] font-bold text-[#d97706]">Xem tất cả thông báo</button>
     </div>
   )

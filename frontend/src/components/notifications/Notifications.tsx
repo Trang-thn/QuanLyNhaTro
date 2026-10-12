@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import type { Item, Draft, FieldProps, RadioClick, DropDowns, NotificationRecipient, NotificationRoom } from "../../types/notifications"
 function Radio({ active, label, onClick }: RadioClick) {
-    return <button type="button" onClick={onClick} className="flex items-center gap-2">
+    return <button type="button" aria-pressed={active} onClick={onClick} className="flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2">
         <img src={active ? '/assets/25c57.svg' : '/assets/ec108.svg'} alt="" width="16" height="16" />
         <span className={`text-sm text-[#1c2534] ${active ? "font-['Inter:Semi_Bold'] font-semibold" : "font-['Inter:Regular']"}`}>{label}</span>
     </button>
@@ -9,16 +9,16 @@ function Radio({ active, label, onClick }: RadioClick) {
 
 export function Dropdown({ value, placeholder, options, onChange }: DropDowns) {
     const [open, setOpen] = useState(false)
+    const menuId = useId()
     return <div className="relative w-full">
-        <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between rounded-lg border border-[#eadfc9] bg-white px-3 py-2.5 text-left text-sm">
-            <span className={value ? 'text-[#1c2534]' : 'text-[#8c9bae]'}>{options.find(option => option.value === value)?.label || placeholder}</span>
+        <button type="button" aria-expanded={open} aria-controls={menuId} onClick={() => setOpen(!open)} className="flex w-full items-center justify-between rounded-lg border border-[#eadfc9] bg-white px-3 py-2.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2">
+            <span className={value ? 'text-[#1c2534]' : 'text-[#4f5e74]'}>{options.find(option => option.value === value)?.label || placeholder}</span>
             <span className={open ? 'rotate-180' : ''}>⌄</span>
         </button>
-        {open && <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-[#eadfc9] bg-white py-1 shadow-[0_8px_20px_rgba(23,43,77,0.12)]">
-            {options.map(option => <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false) }} className="block w-full px-3 py-2 text-left text-sm text-[#1c2534] hover:bg-[#fff9f2]">{option.label}</button>
+        <div id={menuId} hidden={!open} className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-[#eadfc9] bg-white py-1 shadow-[0_8px_20px_rgba(23,43,77,0.12)]">
+            {options.map(option => <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false) }} className="block w-full px-3 py-2 text-left text-sm text-[#1c2534] hover:bg-[#fff9f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d97706]">{option.label}</button>
             )}
         </div>
-        }
     </div>
 }
 
@@ -34,6 +34,10 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
 }) {
     const [errors, setErrors] = useState({ title: false, content: false })
     const [audienceError, setAudienceError] = useState(false)
+    const titleId = useId()
+    const availableRooms = draft.target === 'person'
+        ? recipients.find(person => person.id === draft.person)?.rooms ?? []
+        : rooms
     const next = () => {
         const e = { title: !draft.title.trim(), content: !draft.content.trim() }
         const missingAudience = (draft.target === 'person' && !draft.person) || (draft.scope === 'room' && !draft.room)
@@ -41,16 +45,16 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
         setAudienceError(missingAudience)
         if (!e.title && !e.content && !missingAudience) confirm()
     }
-    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onMouseDown={e => e.target === e.currentTarget && close()}>
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={e => e.target === e.currentTarget && close()}>
         <div className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] overflow-y-auto rounded-[20px] border-2 border-[#eadfc9] bg-white shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
             <div className="flex items-center justify-between border-b border-[#eadfc9] px-6 pb-4 pt-6">
-                <p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Tạo thông báo</p>
+                <p id={titleId} className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Tạo thông báo</p>
                 <button type="button" onClick={close} aria-label="Đóng"><img src="/assets/83bc3.svg" alt="" width="18" height="18" /></button>
             </div>
             <div className="flex flex-col gap-5 p-6">
                 <label className="flex flex-col gap-1.5">
                     <span className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Tiêu đề*</span>
-                    <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Nhập tiêu đề thông báo" className={`rounded-lg border p-3 text-sm outline-none placeholder:text-[#8c9bae] ${errors.title ? 'border-red-400' : 'border-[#eadfc9]'}`} />
+                    <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Nhập tiêu đề thông báo" className={`rounded-lg border p-3 text-sm outline-none placeholder:text-[#4f5e74] focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2 ${errors.title ? 'border-red-400' : 'border-[#eadfc9]'}`} />
                     {
                         errors.title &&
                         <span className="text-xs text-red-500">Vui lòng nhập tiêu đề</span>
@@ -58,7 +62,7 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
                 </label>
                 <label className="flex flex-col gap-1.5">
                     <span className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Nội dung*</span>
-                    <textarea value={draft.content} onChange={e => setDraft({ ...draft, content: e.target.value })} placeholder="Nhập chi tiết nội dung thông báo gửi đến người thuê..." className={`h-24 resize-none rounded-lg border p-3 text-sm outline-none placeholder:text-[#8c9bae] ${errors.content ? 'border-red-400' : 'border-[#eadfc9]'}`} />
+                    <textarea value={draft.content} onChange={e => setDraft({ ...draft, content: e.target.value })} placeholder="Nhập chi tiết nội dung thông báo gửi đến người thuê..." className={`h-24 resize-none rounded-lg border p-3 text-sm outline-none placeholder:text-[#4f5e74] focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-2 ${errors.content ? 'border-red-400' : 'border-[#eadfc9]'}`} />
                     {
                         errors.content &&
                         <span className="text-xs text-red-500">Vui lòng nhập nội dung</span>
@@ -66,8 +70,8 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
                 </label>
                 <div className="flex flex-col gap-2">
                     <p className="font-['Inter:Semi_Bold'] text-[13px] font-semibold">Đối tượng nhận*</p>
-                    <div className="flex flex-wrap gap-6"><Radio active={draft.target === 'all'} label="Tất cả người thuê" onClick={() => setDraft({ ...draft, target: 'all', person: '' })} />
-                        <Radio active={draft.target === 'person'} label="Người thuê cụ thể" onClick={() => setDraft({ ...draft, target: 'person' })} />
+                    <div role="group" aria-label="Đối tượng nhận" className="flex flex-wrap gap-6"><Radio active={draft.target === 'all'} label="Tất cả người thuê" onClick={() => setDraft({ ...draft, target: 'all', person: '' })} />
+                        <Radio active={draft.target === 'person'} label="Người thuê cụ thể" onClick={() => setDraft({ ...draft, target: 'person', person: '', room: '' })} />
                     </div>
                     <div className="flex flex-col gap-3 rounded-[10px] border border-[#eadfc9] bg-[#faf8f5] p-4">
                         <p className="font-['Inter:Bold'] text-xs font-bold text-[#4f5e74]">Phạm vi gửi</p>
@@ -75,22 +79,22 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
                         <Radio active={draft.scope === 'room'} label="Chọn phòng cụ thể" onClick={() => setDraft({ ...draft, scope: 'room' })} />
                         {
                             draft.target === 'person' &&
-                            <Dropdown value={draft.person} placeholder={loadingRecipients ? 'Loading tenants...' : 'Select tenant'} options={recipients.map(person => ({ value: person.id, label: `${person.name}${person.rooms[0] ? ` (${person.rooms[0].room_number})` : ''}` }))} onChange={person => setDraft({ ...draft, person })} />
+                            <Dropdown value={draft.person} placeholder={loadingRecipients ? 'Đang tải danh sách người thuê...' : 'Chọn người thuê'} options={recipients.map(person => ({ value: person.id, label: `${person.name}${person.rooms[0] ? ` (${person.rooms[0].room_number})` : ''}` }))} onChange={person => setDraft({ ...draft, person, room: '' })} />
                         }
                         {
                             draft.scope === 'room' &&
-                            <Dropdown value={draft.room} placeholder={loadingRecipients ? 'Loading rooms...' : 'Select room'} options={rooms.map(room => ({ value: room.id, label: room.room_number }))} onChange={room => setDraft({ ...draft, room })} />
+                            <Dropdown value={draft.room} placeholder={loadingRecipients ? 'Đang tải danh sách phòng...' : 'Chọn phòng'} options={availableRooms.map(room => ({ value: room.id, label: room.room_number }))} onChange={room => setDraft({ ...draft, room })} />
                         }
                         {
                             draft.target === 'all' && draft.scope === 'all' &&
                             <div className="rounded-lg border border-[#eadfc9] bg-white p-3 text-[13px] leading-5">
                                 <p className="text-[#4f5e74]">Thông báo sẽ được gửi đến tất cả người thuê trong hệ thống.</p>
-                                <p className="text-[#8c9bae]">Không cần chọn từng người hoặc từng phòng.</p>
+                                <p className="text-[#4f5e74]">Không cần chọn từng người hoặc từng phòng.</p>
                             </div>
                         }
                     </div>
                 </div>
-                {audienceError && <p role="alert" className="text-xs text-red-600">Select the recipient and room scope before sending.</p>}
+                {audienceError && <p role="alert" className="text-xs text-red-600">Vui lòng chọn người nhận và phạm vi phòng trước khi gửi.</p>}
                 {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
                 <div className="flex justify-end gap-3 pt-3">
                     <button type="button" onClick={close} className="rounded-lg border border-[#eadfc9] px-5 py-2.5 text-sm text-[#4f5e74]">Hủy</button>
@@ -102,12 +106,14 @@ export function CreateModal({ draft, setDraft, close, confirm, recipients, rooms
 }
 
 export function ConfirmModal({ cancel, send, saving = false }: { cancel: () => void; send: () => void; saving?: boolean }) {
-    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true">
+    const titleId = useId()
+    const descriptionId = useId()
+    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
         <div className="w-full max-w-[440px] rounded-[20px] border-2 border-[#eadfc9] bg-white p-8 text-center shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
             <div className="mx-auto flex size-[60px] items-center justify-center rounded-full bg-[#fef3c7]"><img src="/assets/47ce2.svg" alt="" width="32" height="32" />
             </div>
-            <p className="mt-5 font-['Inter:Extra_Bold'] text-xl font-extrabold text-[#1c2534]">Gửi thông báo?</p>
-            <p className="mt-2 text-sm text-[#4f5e74]">Thông báo sẽ được gửi đến các đối tượng đã chọn. Thao tác này không thể hoàn tác.</p>
+            <p id={titleId} className="mt-5 font-['Inter:Extra_Bold'] text-xl font-extrabold text-[#1c2534]">Gửi thông báo?</p>
+            <p id={descriptionId} className="mt-2 text-sm text-[#4f5e74]">Thông báo sẽ được gửi đến các đối tượng đã chọn. Thao tác này không thể hoàn tác.</p>
             <div className="mt-8 flex gap-3">
                 <button type="button" onClick={cancel} className="flex-1 rounded-lg border border-[#eadfc9] py-2.5 text-sm text-[#4f5e74]">Hủy</button>
                 <button type="button" onClick={send} disabled={saving} className="flex-1 rounded-lg bg-[#f59e0b] py-2.5 font-['Inter:Bold'] text-sm font-bold text-white">Gửi ngay</button>
@@ -117,10 +123,11 @@ export function ConfirmModal({ cancel, send, saving = false }: { cancel: () => v
 }
 
 export function DetailModal({ item, close }: { item: Item; close: () => void }) {
-    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onMouseDown={e => e.target === e.currentTarget && close()}>
-        <div className="w-full max-w-[600px] rounded-[20px] border-2 border-[#eadfc9] bg-white shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
+    const titleId = useId()
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={e => e.target === e.currentTarget && close()}>
+        <div className="max-h-[calc(100dvh-32px)] w-full max-w-[600px] overflow-y-auto rounded-[20px] border-2 border-[#eadfc9] bg-white shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
             <div className="flex items-center justify-between border-b border-[#eadfc9] px-6 pb-4 pt-6">
-                <p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chi tiết thông báo</p>
+                <p id={titleId} className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chi tiết thông báo</p>
                 <span className="rounded-md bg-[#e6f4ea] px-2.5 py-1 text-[11px] font-semibold text-[#10b981]">Đã gửi</span>
             </div>
             <div className="flex flex-col gap-5 p-6">
@@ -139,7 +146,7 @@ export function DetailModal({ item, close }: { item: Item; close: () => void }) 
 }
 export function Field({ label, value, bold }: FieldProps) {
     return <div>
-        <p className="font-['Inter:Bold'] text-xs font-bold uppercase text-[#8c9bae]">{label}</p>
+        <p className="font-['Inter:Bold'] text-xs font-bold uppercase text-[#4f5e74]">{label}</p>
         <p className={`mt-2 text-sm leading-6 text-[#1c2534] ${bold ? "font-['Inter:Bold'] font-bold" : "font-['Inter:Regular']"}`}>{value}</p>
     </div>
 }

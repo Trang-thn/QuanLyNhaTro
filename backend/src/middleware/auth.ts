@@ -1,4 +1,4 @@
-﻿import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthUser } from '../types/auth';
 
@@ -7,7 +7,7 @@ declare global {
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const token = req.headers.authorization?.replace(/^Bearer\\s+/i, '');
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
   if (!token || !process.env.JWT_SECRET) return res.status(401).json({ message: 'Unauthorized' });
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET) as AuthUser;
