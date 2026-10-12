@@ -15,7 +15,7 @@ export function TenantNotificationDetailModal({ item, close }: { item: TenantNot
               <p className="text-xs font-bold text-[#8c9bae]">Thời gian</p>
               <p className="mt-1 text-sm text-[#4f5e74]">{item.createdAt}</p>
             </div>
-            <span className="rounded-full bg-[#e6f4ea] px-3 py-1.5 text-[11px] font-bold text-[#16885b]">Đã đọc</span>
+            <span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${item.isRead ? 'bg-[#e6f4ea] text-[#16885b]' : 'bg-[#fef3c7] text-[#b45309]'}`}>{item.isRead ? 'Đã đọc' : 'Chưa đọc'}</span>
           </div>
           <div className="mt-6">
             <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">Nội dung</p>

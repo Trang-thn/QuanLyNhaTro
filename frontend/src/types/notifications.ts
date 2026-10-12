@@ -7,6 +7,7 @@ export interface TenantNotification {
     isRead: boolean
     icon: string
     deadline?: string
+    senderName?: string
 }
 export interface Item {
     id: string;
@@ -37,6 +38,30 @@ export interface RadioClick {
 export interface DropDowns {
     value: string;
     placeholder: string;
-    options: string[];
+    options: DropdownOption[];
     onChange: (value: string) => void
+}
+export interface DropdownOption { value: string; label: string }
+
+export interface NotificationApiDTO {
+    id: string
+    title: string
+    content: string
+    is_read: boolean | number
+    created_at: string
+    receiver_id: string
+    receiver_name?: string | null
+    sender_name?: string | null
+    room_number?: string | null
+}
+
+export interface NotificationRecipient {
+    id: string
+    name: string
+    rooms: { id: string; room_number: string }[]
+}
+
+export interface NotificationRoom {
+    id: string
+    room_number: string
 }
