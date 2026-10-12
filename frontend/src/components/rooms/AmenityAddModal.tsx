@@ -11,7 +11,6 @@ interface Props {
 
 export function AmenityAddModal({ onClose, onSave }: Props) {
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
   const [nameError, setNameError] = useState('')
 
   function handleSubmit() {
@@ -20,11 +19,7 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
       setNameError('Vui lòng nhập tên tiện nghi')
       return
     }
-    onSave({
-      id: Date.now().toString(),
-      name: trimmedName,
-      description: description.trim() || undefined,
-    })
+    onSave({ id: '', name: trimmedName })
   }
 
   return (
@@ -69,17 +64,6 @@ export function AmenityAddModal({ onClose, onSave }: Props) {
             {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
           </div>
 
-          {/* Mô tả */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Mô tả</label>
-            <textarea
-              placeholder="Nhập mô tả ngắn về thiết bị tiện nghi..."
-              value={description}
-              rows={3}
-              onChange={e => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#0d2137] text-sm outline-none transition resize-none"
-            />
-          </div>
         </div>
 
         {/* Footer */}

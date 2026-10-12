@@ -73,12 +73,14 @@ function RowMenu({ amenity, onEdit, onDelete }: RowMenuProps) {
 interface Props {
   amenities: Amenity[]
   rooms: Room[]
+  loading?: boolean
+  error?: string | null
   onAdd: () => void
   onEdit: (a: Amenity) => void
   onDelete: (a: Amenity) => void
 }
 
-export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props) {
+export function AmenityList({ amenities, rooms, loading = false, error, onAdd, onEdit, onDelete }: Props) {
   const [search, setSearch] = useState('')
 
   const filtered = amenities.filter(a =>
@@ -92,6 +94,8 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
 
   return (
     <div className="flex flex-col gap-4">
+      {loading && <div role="status" className="rounded-lg bg-white px-4 py-3 text-sm text-gray-500">Đang tải tiện nghi...</div>}
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Không tải được tiện nghi: {error}</div>}
       {/* Search bar + Add button */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 hover:border-gray-300 transition">
@@ -126,7 +130,7 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
       </div>
 
       {/* Table */}
-      {amenities.length === 0 ? (
+      {loading ? null : amenities.length === 0 && !error ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#fef3c7' }}>
             <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +152,7 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
             Thêm tiện nghi
           </button>
         </div>
-      ) : (
+      ) : amenities.length > 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_2fr_140px_56px] px-5 py-3 border-b border-gray-100 bg-gray-50">
@@ -172,7 +176,7 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
                 <span className="text-sm font-semibold text-gray-800">{a.name}</span>
                 <span className="text-sm text-gray-500 truncate pr-4">{a.description ?? '—'}</span>
                 <span className="text-sm text-gray-500">
-                  {roomCount(a.id)} phòng
+                  {roomCount(a.id) === null ? '—' : `${roomCount(a.id)} phòng`}
                 </span>
                 <div className="flex justify-end">
                   <RowMenu amenity={a} onEdit={onEdit} onDelete={onDelete} />
@@ -181,7 +185,7 @@ export function AmenityList({ amenities, rooms, onAdd, onEdit, onDelete }: Props
             ))
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

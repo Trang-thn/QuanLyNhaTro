@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { amenities as allAmenities } from '../../data/mockData'
+import type { Amenity } from '../../types/rooms'
 import type { RoomDraft, RoomTypeApiDTO } from '../../types/rooms'
 import { RoomTypeDropdown } from './RoomTypeDropdown'
 
@@ -72,11 +72,12 @@ interface Props {
   onClose: () => void
   onSave: (room: RoomDraft) => void
   roomTypes: RoomTypeApiDTO[]
+  amenities: Amenity[]
   loadingTypes?: boolean
   roomTypesError?: string | null
 }
 
-export function RoomAddModal({ onClose, onSave, roomTypes, loadingTypes = false, roomTypesError }: Props) {
+export function RoomAddModal({ onClose, onSave, roomTypes, amenities, loadingTypes = false, roomTypesError }: Props) {
   const [form, setForm] = useState<FormData>({
     room_number: '',
     floor: '',
@@ -270,7 +271,7 @@ export function RoomAddModal({ onClose, onSave, roomTypes, loadingTypes = false,
             <label className="block text-sm font-medium text-gray-700 mb-2">Tiện nghi</label>
             <p className="mb-2 text-xs text-gray-500">{'Ti\u1ec7n nghi ch\u01b0a \u0111\u01b0\u1ee3c l\u01b0u v\u00ec backend ch\u01b0a c\u00f3 API ti\u1ec7n nghi ph\u00f2ng.'}</p>
             <div className="flex flex-wrap gap-2">
-              {allAmenities.map(a => {
+              {amenities.map(a => {
                 const selected = form.amenity_ids.includes(a.id)
                 return (
                   <button
