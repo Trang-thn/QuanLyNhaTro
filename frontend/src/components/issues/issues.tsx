@@ -68,9 +68,9 @@ export function IssueCard({
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="font-['Manrope:Regular'] text-[13px] text-[#4f5e74]">
-                        Chi phí dự kiến:{' '}
+                        Chi phí sửa chữa:{' '}
                         <strong className="font-['Inter:Bold'] text-sm font-bold text-[#d97706]">
-                            {formatCost(issue.expectedCost)}
+                            {issue.actualCost ? formatCost(issue.actualCost) : 'Chưa cập nhật'}
                         </strong>
                     </span>
                     <div className="flex items-center gap-2">
@@ -92,10 +92,14 @@ export function DetailModal({
     issue,
     onClose,
     onSave,
+    saving = false,
+    error,
 }: {
     issue: Issue
     onClose: () => void
     onSave: (status: IssueStatus, actualCost?: number) => void
+    saving?: boolean
+    error?: string | null
 }) {
     const [status, setStatus] = useState<IssueStatus>(issue.status)
     const [actualCost, setActualCost] = useState(issue.actualCost ? String(issue.actualCost) : '')
@@ -134,7 +138,7 @@ export function DetailModal({
                     <Info label="Tiêu đề sự cố" value={issue.title} emphasized />
                     <Info
                         label="Mô tả"
-                        value={`${issue.description}${issue.id === 'issue-101' ? ' Đã được khắc phục tạm thời bằng van tổng.' : ''}`}
+                        value={issue.description}
                     />
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-10">
                         <Info label="Người báo" value={issue.reporter} />
@@ -155,14 +159,14 @@ export function DetailModal({
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <p className="font-['Manrope:Regular'] text-xs uppercase text-[#8c9bae]">Ảnh minh họa</p>
-                        <img
-                            src="/assets/a8738.png"
-                            alt="Vòi nước bồn rửa đang bị rò rỉ"
-                            className="h-40 w-full rounded-lg object-cover"
-                        />
+                        {issue.imageUrl ? (
+                            <img src={issue.imageUrl} alt="Ảnh sự cố" className="h-40 w-full rounded-lg object-cover" />
+                        ) : (
+                            <p className="rounded-lg border border-dashed border-[#d8e0ea] p-6 text-sm text-[#8c9bae]">Chưa có ảnh được lưu.</p>
+                        )}
                     </div>
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        <Info label="Chi phí dự kiến" value={formatCost(issue.expectedCost)} cost />
+                        <Info label="Chi phí sửa chữa" value={issue.actualCost ? formatCost(issue.actualCost) : 'Chưa cập nhật'} cost />
                         <label className="flex min-w-0 flex-col gap-1.5">
                             <span className="font-['Manrope:Regular'] text-xs uppercase text-[#8c9bae]">
                                 Chi phí thực tế
@@ -177,6 +181,7 @@ export function DetailModal({
                             />
                         </label>
                     </div>
+                    {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
                     <div className="flex justify-end gap-3 pt-3">
                         <button
                             type="button"
@@ -188,9 +193,10 @@ export function DetailModal({
                         <button
                             type="button"
                             onClick={() => onSave(status, actualCost ? Number(actualCost) : undefined)}
+                            disabled={saving}
                             className="rounded-lg bg-[#f59e0b] px-5 py-2.5 font-['Manrope:Bold'] text-sm font-bold text-[#fff9f2]"
                         >
-                            Lưu thay đổi
+                            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                         </button>
                     </div>
                 </div>

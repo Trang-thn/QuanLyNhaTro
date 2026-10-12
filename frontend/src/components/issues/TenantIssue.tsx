@@ -1,5 +1,6 @@
 import type { Incident, Status } from "../../types/issues";
-import { useState, useRef } from "react";
+import { useState } from "react";
+import type { MaintenanceRoomDTO } from '../../services/maintenanceService';
 const statusLabel: Record<Status, string> = { TIEP_NHAN: 'Tiếp nhận', DANG_XU_LY: 'Đang xử lý', HOAN_THANH: 'Hoàn thành' }
 const statusClass: Record<Status, string> = { TIEP_NHAN: 'bg-[#fef3c7] text-[#b45309]', DANG_XU_LY: 'bg-[#ebf3fe] text-[#3b82f6]', HOAN_THANH: 'bg-[#e6f4ea] text-[#16885b]' }
 const formatCost = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)}đ`
@@ -90,9 +91,9 @@ export function IncidentModal({
                             )}
                             <div>
                                 <p className="font-['Inter:Bold'] text-sm font-bold text-[#1f2937]">
-                                    {incident.imageName}
+                                    {incident.imageName ?? 'Chưa có ảnh được lưu'}
                                 </p>
-                                <p className="mt-1 text-xs text-[#8c9bae]">JPG · 1,2 MB</p>
+                                {incident.imageUrl && <p className="mt-1 text-xs text-[#8c9bae]">Ảnh đã có URL lưu trữ.</p>}
                             </div>
                         </div>
                     </div>
@@ -146,36 +147,24 @@ export function Info({
 export function AddModal({
     close,
     save,
+    rooms,
+    saving = false,
+    error,
 }: {
     close: () => void;
-    save: (item: Incident) => void;
+    save: (input: { room_id: string; title: string; description: string }) => Promise<void>;
+    rooms: MaintenanceRoomDTO[];
+    saving?: boolean;
+    error?: string | null;
 }) {
-    const inputRef = useRef<HTMLInputElement>(null),
-        [title, setTitle] = useState(""),
+    const [title, setTitle] = useState(""),
         [description, setDescription] = useState(""),
-        [file, setFile] = useState<File | null>(null),
-        [preview, setPreview] = useState(""),
+        [roomId, setRoomId] = useState(rooms[0]?.id ?? ''),
         [submitted, setSubmitted] = useState(false);
     const submit = () => {
         setSubmitted(true);
-        if (!title.trim() || !description.trim()) return;
-        save({
-            id: String(Date.now()),
-            title: title.trim(),
-            description: description.trim(),
-            room: "P101",
-            date: "05/10/2026",
-            time: "09:30",
-            status: "TIEP_NHAN",
-            imageName: file?.name || "Ảnh đính kèm",
-            imageUrl: preview || undefined,
-            icon: "/assets/b2c71.svg",
-        });
-    };
-    const choose = (selected?: File) => {
-        if (!selected) return;
-        setFile(selected);
-        setPreview(URL.createObjectURL(selected));
+        if (!roomId || !title.trim() || !description.trim()) return;
+        void save({ room_id: roomId, title: title.trim(), description: description.trim() });
     };
     return (
         <div
@@ -194,6 +183,16 @@ export function AddModal({
                     </button>
                 </div>
                 <div className="flex flex-col gap-5 p-6">
+                    <Field label="Phòng *" error={submitted && !roomId ? "Tài khoản chưa có phòng thuê đang hiệu lực" : ""}>
+                        <select
+                            value={roomId}
+                            onChange={(event) => setRoomId(event.target.value)}
+                            disabled={rooms.length === 0 || saving}
+                            className="w-full rounded-lg border border-[#d8e0ea] p-3 text-sm outline-none"
+                        >
+                            {rooms.length === 0 ? <option value="">Không có phòng thuê đang hiệu lực</option> : rooms.map(room => <option key={room.id} value={room.id}>Phòng {room.room_number}</option>)}
+                        </select>
+                    </Field>
                     <Field
                         label="Tiêu đề sự cố *"
                         error={
@@ -224,55 +223,14 @@ export function AddModal({
                     </Field>
                     <div>
                         <p className="mb-2 font-['Inter:Bold'] text-[13px] font-bold text-[#4f5e74]">
-                            Ảnh minh họa
+                            Ảnh minh họa (chưa hỗ trợ lưu)
                         </p>
-                        <input
-                            ref={inputRef}
-                            type="file"
-                            accept="image/jpeg,image/png"
-                            className="hidden"
-                            onChange={(e) => choose(e.target.files?.[0])}
-                        />
-                        {file ? (
-                            <button
-                                type="button"
-                                onClick={() => inputRef.current?.click()}
-                                className="flex w-full items-center gap-4 rounded-lg border border-[#e5e7eb] bg-[#fff9f2] p-3 text-left"
-                            >
-                                {preview ? (
-                                    <img
-                                        src={preview}
-                                        alt="Xem trước ảnh"
-                                        className="size-16 rounded object-cover"
-                                    />
-                                ) : (
-                                    <img src="/assets/c4d33.svg" alt="" width="48" height="48" />
-                                )}
-                                <span>
-                                    <strong className="block text-sm text-[#1f2937]">
-                                        {file.name}
-                                    </strong>
-                                    <small className="text-xs text-[#8c9bae]">
-                                        JPG · {(file.size / 1024 / 1024).toFixed(1)} MB
-                                    </small>
-                                </span>
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => inputRef.current?.click()}
-                                className="flex h-24 w-full flex-col items-center justify-center rounded-lg border border-dashed border-[#d8e0ea] bg-[#fff9f2]"
-                            >
-                                <img src="/assets/d52ee.svg" alt="" width="24" height="24" />
-                                <strong className="mt-1 text-sm text-[#d97706]">
-                                    Tải ảnh lên
-                                </strong>
-                                <span className="mt-1 text-xs text-[#8c9bae]">
-                                    JPG, PNG · Tối đa 5 MB
-                                </span>
-                            </button>
-                        )}
+                        <div className="flex min-h-20 items-center gap-3 rounded-lg border border-dashed border-[#d8e0ea] bg-[#fff9f2] p-4 text-sm text-[#8c9bae]">
+                            <img src="/assets/c4d33.svg" alt="" width="32" height="32" />
+                            Chưa có dịch vụ lưu ảnh. Báo cáo sẽ chỉ lưu tiêu đề và mô tả.
+                        </div>
                     </div>
+                    {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
                 </div>
                 <div className="flex justify-end gap-3 border-t border-[#e5e7eb] px-6 py-4">
                     <button
@@ -285,9 +243,10 @@ export function AddModal({
                     <button
                         type="button"
                         onClick={submit}
+                        disabled={saving || rooms.length === 0}
                         className="rounded-lg bg-[#f59e0b] px-5 py-2.5 font-['Inter:Bold'] text-sm font-bold text-white"
                     >
-                        Gửi yêu cầu
+                        {saving ? 'Đang gửi...' : 'Gửi yêu cầu'}
                     </button>
                 </div>
             </div>
