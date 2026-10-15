@@ -22,19 +22,28 @@ export default function DashboardView({ data }: { data: DashboardData }) {
   const totalRooms = rooms.length
   const occupied = rooms.filter(r => r.status === 'DANG_THUE').length
   const vacant = rooms.filter(r => r.status === 'TRONG').length
+  const maintenanceRooms = rooms.filter(r => r.status === 'BAO_TRI').length
   const unpaidInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN')
   const totalDebt = unpaidInvoices.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0)
-  const overdueCount = unpaidInvoices.filter(i => i.due_date < '2026-10-01').length
+  const today = new Date()
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const overdueCount = unpaidInvoices.filter(i => i.due_date < todayIso).length
   const pendingMaintenance = maintenanceRequests.filter(m => m.status !== 'HOAN_THANH').length
-  const occupancyPct = Math.round((occupied / totalRooms) * 100)
+  const newMaintenance = maintenanceRequests.filter(m => m.status === 'TIEP_NHAN').length
+  const occupancyPct = totalRooms === 0 ? 0 : Math.round((occupied / totalRooms) * 100)
 
   const occupancyData = [
     { name: 'Đang thuê', value: occupied },
     { name: 'Phòng trống', value: vacant },
+    { name: 'Bảo trì', value: maintenanceRooms },
   ]
 
   const overdueInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN').slice(0, 3)
-  const expiringContracts = contracts.filter(c => c.status === 'HIEU_LUC').slice(0, 3)
+  const expiringContracts = contracts.filter(c => {
+    if (c.status !== 'HIEU_LUC') return false
+    const daysRemaining = (new Date(`${c.end_date}T00:00:00`).getTime() - new Date(`${todayIso}T00:00:00`).getTime()) / 86400000
+    return daysRemaining >= 0 && daysRemaining <= 30
+  }).slice(0, 3)
 
   return (
     <div className="space-y-5">
@@ -58,7 +67,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">+4%</span>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: NAVY }}>{occupancyPct}% ({occupied}/{totalRooms} phòng)</p>
-          <p className="text-xs text-gray-400">{occupied} Đang thuê · {vacant} Phòng trống · 0 Bảo trì</p>
+          <p className="text-xs text-gray-400">{occupied} Đang thuê · {vacant} Phòng trống · {maintenanceRooms} Bảo trì</p>
         </div>
         {/* Debt */}
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -78,7 +87,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
             <button className="text-xs font-semibold" style={{ color: AMBER }}>Xem danh sách →</button>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: NAVY }}>{pendingMaintenance} Yêu cầu</p>
-          <p className="text-xs text-gray-400">2 Mới tiếp nhận · {pendingMaintenance - 2} Đang sửa chữa</p>
+          <p className="text-xs text-gray-400">{newMaintenance} Mới tiếp nhận · {pendingMaintenance - newMaintenance} Đang sửa chữa</p>
         </div>
       </div>
 
@@ -123,6 +132,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                 <Pie data={occupancyData} cx="50%" cy="50%" innerRadius={52} outerRadius={72} paddingAngle={3} dataKey="value">
                   <Cell fill="#10b981" />
                   <Cell fill={AMBER} />
+                  <Cell fill="#64748b" />
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
@@ -133,8 +143,9 @@ export default function DashboardView({ data }: { data: DashboardData }) {
           </div>
           <div className="space-y-2 mt-3">
             {[
-              { label: 'Đang thuê', value: `${occupied} Phòng (${occupancyPct}%)`, color: '#10b981' },
-              { label: 'Phòng trống', value: `${vacant} Phòng (${100 - occupancyPct}%)`, color: AMBER },
+              { label: 'Đang thuê', value: `${occupied} phòng`, color: '#10b981' },
+              { label: 'Phòng trống', value: `${vacant} phòng`, color: AMBER },
+              { label: 'Bảo trì', value: `${maintenanceRooms} phòng`, color: '#64748b' },
             ].map(d => (
               <div key={d.label} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
@@ -169,7 +180,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                 {overdueInvoices.map((inv, i) => {
                   const contract = contracts.find(c => c.id === inv.contract_id)
                   const tenantName = contract ? getTenantName(contract.representative_tenant_id) : '-'
-                  const isOverdue = inv.due_date < '2026-10-01'
+                  const isOverdue = inv.due_date < todayIso
                   return (
                     <tr key={inv.id} className={`border-t border-gray-50 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}>
                       <td className="px-4 py-3 font-semibold text-sm" style={{ color: NAVY }}>{getRoomNumber(inv.room_id)}</td>
@@ -179,7 +190,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                       <td className="px-4 py-3 text-xs" style={{ color: isOverdue ? '#e53e3e' : '#6b7280' }}>{inv.due_date.split('-').reverse().join('/')}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${isOverdue ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
-                          {isOverdue ? `Quá hạn ${Math.floor((new Date('2026-10-01').getTime() - new Date(inv.due_date).getTime()) / 86400000)} ngày` : statusLabel[inv.status]}
+                          {isOverdue ? `Quá hạn ${Math.floor((new Date(`${todayIso}T00:00:00`).getTime() - new Date(`${inv.due_date}T00:00:00`).getTime()) / 86400000)} ngày` : statusLabel[inv.status]}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -204,6 +215,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
             <h3 className="font-semibold text-sm" style={{ color: NAVY }}>Hợp đồng sắp hết hạn (30 ngày)</h3>
           </div>
           <div className="p-3 space-y-2">
+            {expiringContracts.length === 0 && <p className="p-3 text-xs text-gray-500">Không có hợp đồng sắp hết hạn trong 30 ngày tới.</p>}
             {expiringContracts.map(c => {
               const tenantName = getTenantName(c.representative_tenant_id)
               const room = getRoomNumber(c.room_id)
