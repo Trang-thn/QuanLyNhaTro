@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { RowDataPacket } from 'mysql2';
 import { pool } from '../config/database';
 import { AuthUser } from '../types/auth';
@@ -121,4 +122,38 @@ export async function getCurrentUserProfile(authUser: AuthUser): Promise<Current
     isRepresentative: Boolean(member.isRepresentative),
   }));
   return profile;
+}
+function requiredText(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !value.trim()) throw new HttpError(400, `${field} is required`);
+  return value.trim();
+}
+
+export async function updateUserProfile(authUser: AuthUser, input: Record<string, unknown>) {
+  const email = requiredText(input.email, 'email').toLowerCase();
+  const phoneNumber = requiredText(input.phoneNumber, 'phoneNumber');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'email is invalid');
+  if (!/^\+?[0-9]{9,15}$/.test(phoneNumber)) throw new HttpError(400, 'phoneNumber is invalid');
+  await pool.execute('UPDATE users SET email = ?, phone_number = ? WHERE id = ?', [email, phoneNumber, authUser.id]);
+  const tenant = await pool.query<RowDataPacket[]>('SELECT id FROM tenants WHERE user_id = ? LIMIT 1', [authUser.id]);
+  const tenantId = tenant[0][0]?.id as string | undefined;
+  if (tenantId) {
+    await pool.execute('UPDATE tenants SET permanent_address = ?, emergency_contact = ? WHERE id = ?', [
+      typeof input.permanentAddress === 'string' ? input.permanentAddress.trim() : null,
+      typeof input.emergencyContact === 'string' ? input.emergencyContact.trim() : null, tenantId,
+    ]);
+  }
+  return getCurrentUserProfile(authUser);
+}
+
+export async function changeUserPassword(userId: string, input: Record<string, unknown>): Promise<void> {
+  const currentPassword = requiredText(input.currentPassword, 'currentPassword');
+  const newPassword = requiredText(input.newPassword, 'newPassword');
+  if (newPassword.length < 8) throw new HttpError(400, 'newPassword must be at least 8 characters');
+  const [rows] = await pool.query<(RowDataPacket & { password_hash: string })[]>(
+    'SELECT password_hash FROM users WHERE id = ? LIMIT 1', [userId]);
+  if (!rows[0] || !(await bcrypt.compare(currentPassword, rows[0].password_hash))) {
+    throw new HttpError(400, 'Current password is incorrect');
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await pool.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, userId]);
 }
