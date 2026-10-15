@@ -1,38 +1,60 @@
 import { apiRequest } from './api'
 import type { TenantProfileData } from '../types/tenantProfile'
 
-const mockTenantProfileData: TenantProfileData = {
-  fullName: 'Nguyễn Văn A',
-  profileFields: [
-    { label: 'Họ và tên', value: 'Nguyễn Văn A' },
-    { label: 'Số CCCD/CMND', value: '012345678901 (Ngày cấp: 10/05/2021 · Nơi cấp: Cục CSQLHC)' },
-    { label: 'Số điện thoại', value: '0987654321' },
-    { label: 'Địa chỉ Email', value: 'nguyenvana@gmail.com' },
-    { label: 'Địa chỉ thường trú', value: 'Số 123, Đường ABC, Quận XYZ, TP. Hà Nội', wide: true },
-    { label: 'Liên hệ khẩn cấp', value: 'Bà Nguyễn Thị B (Mẹ · 0912345678)' },
-  ],
-  room: {
-    heading: 'Phòng P101 (Tầng 1 · Loại: VIP)',
-    term: 'Thời hạn: 01/01/2026 · 31/12/2026 (Còn 6 tháng)',
-    costDetails: [
-      { label: 'Giá thuê', value: '3.500.000đ/tháng' },
-      { label: 'Tiền đặt cọc', value: '3.500.000đ' },
-      { label: 'Ngày chốt hóa đơn', value: 'Ngày 01 hàng tháng' },
-    ],
-    amenities: ['WiFi', 'Điều hòa', 'Tủ lạnh', 'Bình nóng lạnh', 'Máy giặt'],
-    members: [
-      { name: 'Nguyễn Văn A', phone: '0987654321', role: 'Trưởng phòng', date: '01/01/2026', isLead: true },
-      { name: 'Lê Văn Nam', phone: '0912123123', role: 'Thành viên', date: '15/01/2026', isLead: false },
-    ],
-  },
+interface TenantProfileResponse {
+  user: { fullName: string; email: string | null; phoneNumber: string | null }
+  tenant: null | {
+    identityCardNumber: string
+    issueDate: string | null
+    issuePlace: string | null
+    permanentAddress: string | null
+    emergencyContact: string | null
+  }
+  contract: null | {
+    startDate: string
+    endDate: string
+    rentalPrice: string
+    depositAmount: string
+    status: string
+    billingCycleDay: number | null
+  }
+  room: null | { roomNumber: string; floor: number | null; roomType: null | { name: string } }
+  amenities: string[]
+  members: Array<{ fullName: string | null; phoneNumber: string | null; isRepresentative: boolean }>
 }
 
-export const initialTenantProfileData = mockTenantProfileData
-
 export async function getTenantProfileData(): Promise<TenantProfileData> {
-  try {
-    return await apiRequest<TenantProfileData>('/tenant/profile')
-  } catch {
-    return mockTenantProfileData
+  const profile = await apiRequest<TenantProfileResponse>('/tenant/profile')
+  const tenant = profile.tenant
+  const contract = profile.contract
+  const room = profile.room
+
+  return {
+    fullName: profile.user.fullName,
+    profileFields: [
+      { label: 'Họ và tên', value: profile.user.fullName },
+      { label: 'Số CCCD/CMND', value: tenant?.identityCardNumber ?? 'Chưa liên kết' },
+      { label: 'Số điện thoại', value: profile.user.phoneNumber ?? '-' },
+      { label: 'Địa chỉ Email', value: profile.user.email ?? '-' },
+      { label: 'Địa chỉ thường trú', value: tenant?.permanentAddress ?? '-', wide: true },
+      { label: 'Liên hệ khẩn cấp', value: tenant?.emergencyContact ?? '-' },
+    ],
+    room: {
+      heading: room ? `Phòng ${room.roomNumber} (Tầng ${room.floor ?? '-'} · Loại: ${room.roomType?.name ?? '-'})` : 'Chưa có thông tin phòng thuê',
+      term: contract ? `Thời hạn: ${contract.startDate} · ${contract.endDate}` : 'Chưa liên kết hợp đồng',
+      costDetails: contract ? [
+        { label: 'Giá thuê', value: `${Number(contract.rentalPrice).toLocaleString('vi-VN')}đ/tháng` },
+        { label: 'Tiền đặt cọc', value: `${Number(contract.depositAmount).toLocaleString('vi-VN')}đ` },
+        { label: 'Ngày chốt hóa đơn', value: `Ngày ${contract.billingCycleDay ?? '-'} hàng tháng` },
+      ] : [],
+      amenities: profile.amenities,
+      members: profile.members.map((member) => ({
+        name: member.fullName ?? '-',
+        phone: member.phoneNumber ?? '-',
+        role: member.isRepresentative ? 'Trưởng phòng' : 'Thành viên',
+        date: '-',
+        isLead: member.isRepresentative,
+      })),
+    },
   }
 }

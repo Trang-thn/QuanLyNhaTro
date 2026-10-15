@@ -1,7 +1,9 @@
-export type TenantDashboardInvoice = typeof import('../data/mockData').invoices[number]
-export type TenantDashboardContract = typeof import('../data/mockData').contracts[number]
-export type TenantDashboardMaintenanceRequest = typeof import('../data/mockData').maintenanceRequests[number]
-export type TenantDashboardRoom = typeof import('../data/mockData').rooms[number]
+import type { DashboardContract, DashboardInvoice, DashboardMaintenanceRequest, DashboardRoom } from './dashboard'
+
+export type TenantDashboardInvoice = DashboardInvoice
+export type TenantDashboardContract = DashboardContract
+export type TenantDashboardMaintenanceRequest = DashboardMaintenanceRequest
+export type TenantDashboardRoom = DashboardRoom
 
 export interface TenantDashboardData {
   contractId: string

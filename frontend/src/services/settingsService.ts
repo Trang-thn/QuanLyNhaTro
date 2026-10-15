@@ -1,63 +1,41 @@
 import { apiRequest } from './api'
 import type { SettingsData, SettingsRole } from '../types/settings'
 
-const mockSettings: Record<SettingsRole, SettingsData> = {
-  admin: {
-    avatarInitial: 'A',
-    displayName: 'Admin',
-    email: 'admin@nhatropro.vn',
-    roleLabel: 'Chủ trọ',
-    profileFields: [
-      { label: 'Họ và tên', value: 'Nguyễn Văn A' },
-      { label: 'Số CCCD', value: '012345678901' },
-      { label: 'Số điện thoại', value: '0987654321' },
-      { label: 'Email', value: 'admin@nhatropro.vn' },
-      { label: 'Địa chỉ', value: 'Số 123, Đường ABC, Quận XYZ, TP. Hà Nội', colSpan: 2 },
-    ],
-    editProfileFields: {
-      fullName: 'Nguyễn Văn A', identityNumber: '012345678901', phone: '0987654321',
-      email: 'nguyenvana@gmail.com', address: 'Số 123, Đường ABC, Quận XYZ, TP. Hà Nội',
-      emergencyPhone: '0912345678', emergencyRelationship: 'Mẹ',
-    },
-    systemInfo: [
-      { label: 'Phiên bản', value: 'NhàTrọ Pro v2.0.0' },
-      { label: 'Môi trường', value: 'Production' },
-      { label: 'Cập nhật lần cuối', value: '01/10/2026' },
-    ],
-  },
-  tenant: {
-    avatarInitial: 'N',
-    displayName: 'Nguyễn Văn A',
-    email: 'nguyenvana@gmail.com',
-    roleLabel: 'Khách thuê',
-    profileFields: [
-      { label: 'Họ và tên', value: 'Nguyễn Văn A' },
-      { label: 'Số CCCD', value: '012345678901' },
-      { label: 'Số điện thoại', value: '0987654321' },
-      { label: 'Email', value: 'nguyenvana@gmail.com' },
-      { label: 'Địa chỉ', value: 'Số 123, Đường ABC, Quận XYZ, TP. Hà Nội', colSpan: 2 },
-    ],
-    editProfileFields: {
-      fullName: 'Nguyễn Văn A', identityNumber: '012345678901', phone: '0987654321',
-      email: 'nguyenvana@gmail.com', address: 'Số 123, Đường ABC, Quận XYZ, TP. Hà Nội',
-      emergencyPhone: '0912345678', emergencyRelationship: 'Mẹ',
-    },
-    systemInfo: [
-      { label: 'Phiên bản', value: 'NhàTrọ Pro v2.0.0' },
-      { label: 'Môi trường', value: 'Production' },
-      { label: 'Cập nhật lần cuối', value: '01/10/2026' },
-    ],
-  },
-}
-
-export function getInitialSettingsData(role: SettingsRole): SettingsData {
-  return mockSettings[role]
+interface ProfileResponse {
+  user: { fullName: string; email: string | null; phoneNumber: string | null; role: 'ADMIN' | 'TENANT' }
+  tenant: null | { identityCardNumber: string; permanentAddress: string | null; emergencyContact: string | null }
 }
 
 export async function getSettingsData(role: SettingsRole): Promise<SettingsData> {
-  try {
-    return await apiRequest<SettingsData>(`/${role}/settings`)
-  } catch {
-    return mockSettings[role]
+  const profile = await apiRequest<ProfileResponse>(role === 'admin' ? '/admin/settings' : '/tenant/settings')
+  const tenant = profile.tenant
+  const fullName = profile.user.fullName
+  const email = profile.user.email ?? ''
+  const phone = profile.user.phoneNumber ?? ''
+  const address = tenant?.permanentAddress ?? ''
+  const emergencyPhone = tenant?.emergencyContact ?? ''
+
+  return {
+    avatarInitial: fullName.slice(0, 1).toUpperCase(),
+    displayName: fullName,
+    email,
+    roleLabel: profile.user.role === 'ADMIN' ? 'Chủ trọ' : 'Khách thuê',
+    profileFields: [
+      { label: 'Họ và tên', value: fullName },
+      { label: 'Số CCCD', value: tenant?.identityCardNumber ?? '-' },
+      { label: 'Số điện thoại', value: phone },
+      { label: 'Email', value: email },
+      { label: 'Địa chỉ', value: address || '-', colSpan: 2 },
+    ],
+    editProfileFields: {
+      fullName,
+      identityNumber: tenant?.identityCardNumber ?? '',
+      phone,
+      email,
+      address,
+      emergencyPhone,
+      emergencyRelationship: '',
+    },
+    systemInfo: [],
   }
 }

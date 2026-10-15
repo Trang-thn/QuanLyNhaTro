@@ -16,13 +16,19 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
   const tenantIncidents = maintenanceRequests.filter(m => m.room_id === tenantRoom?.id)
   const pendingIncidents = tenantIncidents.filter(m => m.status !== 'HOAN_THANH')
   const currentInvoice = tenantInvoices[0]
+  const dueDate = tenantContract?.end_date ? new Date(tenantContract.end_date) : null
+  const now = new Date()
+  const monthsRemaining = dueDate ? Math.max(0, (dueDate.getFullYear() - now.getFullYear()) * 12 + dueDate.getMonth() - now.getMonth()) : null
+  const invoiceStatusLabel = currentInvoice?.status === 'DA_THANH_TOAN'
+    ? 'Đã thanh toán'
+    : currentInvoice?.status === 'THANH_TOAN_MOT_PHAN' ? 'Thanh toán một phần' : 'Chưa thanh toán'
   if (!linked) {
     return (
       <div className="space-y-4">
         {/* Warning banner */}
         <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200" style={{ background: '#fef9ec' }}>
           <div className="w-5 h-5 shrink-0 flex items-center justify-center rounded text-xs" style={{ background: '#fef3c7' }}>⚠</div>
-          <p className="text-sm text-amber-800 flex-1">Tài khoản chưa liên kết với Hợp đồng phòng trọ nào. Vui lòng kiểm tra lại CCCD hoặc liên hệ Chủ trọ.</p>
+          <p className="text-sm text-amber-800 flex-1">Tài khoản chưa được liên kết với hợp đồng phòng trọ nào. Vui lòng kiểm tra lại CCCD hoặc liên hệ Chủ trọ.</p>
           <button className="text-sm font-semibold px-3 py-1.5 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-50 shrink-0">Liên hệ Chủ trọ</button>
           <button className="text-sm font-semibold px-3 py-1.5 rounded-lg text-white shrink-0" style={{ background: AMBER }}>Cập nhật CCCD</button>
         </div>
@@ -55,7 +61,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
 
   return (
     <div className="space-y-5">
-      <TenantWelcomeBanner />
+      <TenantWelcomeBanner roomNumber={tenantRoom?.room_number} />
 
       {/* 4 metric cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -65,8 +71,8 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
             <p className="text-xs text-gray-400">Thông tin phòng</p>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
           </div>
-          <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>Phòng P101</p>
-          <p className="text-xs text-gray-400">Tầng 1 · Loại VIP</p>
+          <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>{tenantRoom ? `Phòng ${tenantRoom.room_number}` : 'Chưa có phòng'}</p>
+          <p className="text-xs text-gray-400">{tenantRoom ? `Tầng ${tenantRoom.floor}` : 'Chưa liên kết hợp đồng'}</p>
         </div>
         {/* Contract expiry */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -74,8 +80,8 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
             <p className="text-xs text-gray-400">Thời hạn hợp đồng</p>
             <span className="w-2.5 h-2.5 rounded-full bg-blue-400" />
           </div>
-          <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>Còn 6 tháng</p>
-          <p className="text-xs text-gray-400">Hết hạn: 31/12/2026</p>
+          <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>{monthsRemaining === null ? '-' : `Còn ${monthsRemaining} tháng`}</p>
+          <p className="text-xs text-gray-400">{dueDate ? `Hết hạn: ${dueDate.toLocaleDateString('vi-VN')}` : 'Chưa có hợp đồng'}</p>
         </div>
         {/* Invoice */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -86,7 +92,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
           <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>
             {currentInvoice ? formatVND(currentInvoice.total_amount) : '—'}
           </p>
-          <p className="text-xs text-gray-400">Trạng thái: <span className="text-red-500 font-medium">Chưa đóng</span></p>
+          <p className="text-xs text-gray-400">Trạng thái: <span className="text-red-500 font-medium">{currentInvoice ? invoiceStatusLabel : 'Chưa có hóa đơn'}</span></p>
         </div>
         {/* Incidents */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -95,7 +101,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
           </div>
           <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>{pendingIncidents.length} sự cố</p>
-          <p className="text-xs text-gray-400">Trạng thái: <span className="text-amber-600 font-medium">Đang xử lý</span></p>
+          <p className="text-xs text-gray-400">Trạng thái: <span className="text-amber-600 font-medium">{pendingIncidents.length ? 'Đang xử lý' : 'Không có yêu cầu đang xử lý'}</span></p>
         </div>
       </div>
 
@@ -145,9 +151,11 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
             <p className="font-bold text-sm" style={{ color: '#92400e' }}>Nhắc nhở đóng tiền</p>
           </div>
           <p className="text-xs leading-relaxed" style={{ color: '#92400e' }}>
-            Hạn thanh toán hóa đơn Tháng 05/2026 là ngày <strong>05/05/2026</strong>. Vui lòng thanh toán đúng hạn để tránh phát sinh phí phạt.
+            {currentInvoice
+              ? `Hóa đơn kỳ ${String(currentInvoice.billing_month).padStart(2, '0')}/${currentInvoice.billing_year}, hạn thanh toán ${new Date(currentInvoice.due_date).toLocaleDateString('vi-VN')}.`
+              : 'Hiện chưa có hóa đơn để thanh toán.'}
           </p>
-          <button className="w-full py-2.5 rounded-lg text-white font-semibold text-sm" style={{ background: AMBER }}>
+          <button type="button" disabled className="w-full py-2.5 rounded-lg text-white font-semibold text-sm disabled:opacity-50" style={{ background: AMBER }} title="Chức năng thanh toán chưa có API trong Backend">
             Thanh toán ngay
           </button>
         </div>

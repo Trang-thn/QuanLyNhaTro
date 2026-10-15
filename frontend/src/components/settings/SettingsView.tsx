@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SettingsData } from '../../types/settings'
-import EditProfileModal from './EditProfileModal'
-import ChangePasswordModal from './ChangePasswordModal'
+import ConnectedEditProfileModal from './ConnectedEditProfileModal'
+import ConnectedChangePasswordModal from './ConnectedChangePasswordModal'
+import type { UpdateProfilePayload } from '../../services/settingsActions'
 
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
@@ -12,23 +13,33 @@ const NAVY = '#0d2137'
 
 
 export default function SettingsView({ data }: { data: SettingsData }) {
+  const [viewData, setViewData] = useState(data)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  useEffect(() => setViewData(data), [data])
+  const handleProfileSaved = (profile: UpdateProfilePayload) => setViewData(current => ({
+    ...current,
+    email: profile.email,
+    profileFields: current.profileFields.map((field, index) => ({ ...field,
+      value: index === 2 ? profile.phoneNumber : index === 3 ? profile.email : index === 4 ? profile.permanentAddress : field.value,
+    })),
+    editProfileFields: { ...current.editProfileFields, email: profile.email, phone: profile.phoneNumber, address: profile.permanentAddress, emergencyPhone: profile.emergencyContact },
+  }))
 
   return (
     <div className="space-y-5 max-w-3xl">
       {/* Profile card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex items-center gap-4 px-6 py-5 border-b border-gray-100">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0" style={{ background: AMBER }}>{data.avatarInitial}</div>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0" style={{ background: AMBER }}>{viewData.avatarInitial}</div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold" style={{ color: NAVY }}>{data.displayName}</h2>
-            <p className="text-sm text-gray-500">{data.email}</p>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mt-1" style={{ background: '#fef3c7', color: '#d97706' }}>{data.roleLabel}</span>
+            <h2 className="text-lg font-bold" style={{ color: NAVY }}>{viewData.displayName}</h2>
+            <p className="text-sm text-gray-500">{viewData.email}</p>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mt-1" style={{ background: '#fef3c7', color: '#d97706' }}>{viewData.roleLabel}</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-px bg-gray-100">
-          {data.profileFields.map(f => (
+          {viewData.profileFields.map(f => (
             <div key={f.label} className={`bg-white px-6 py-4 ${(f as { colSpan?: number }).colSpan === 2 ? 'col-span-2' : ''}`}>
               <div className="text-[11px] text-gray-400 uppercase tracking-wide mb-0.5">{f.label}</div>
               <div className="text-sm font-medium text-gray-800">{f.value}</div>
@@ -57,21 +68,21 @@ export default function SettingsView({ data }: { data: SettingsData }) {
       </div>
 
       {/* App info */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      {viewData.systemInfo.length > 0 && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h3 className="font-semibold text-sm mb-4" style={{ color: NAVY }}>Thông tin hệ thống</h3>
         <div className="space-y-3 text-sm">
-          {data.systemInfo.map(f => (
+          {viewData.systemInfo.map(f => (
             <div key={f.label} className="flex justify-between">
               <span className="text-gray-500">{f.label}</span>
               <span className="font-medium text-gray-800">{f.value}</span>
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Modals */}
-      {showEditProfile && <EditProfileModal onClose={() => setShowEditProfile(false)} data={data} />}
-      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+      {showEditProfile && <ConnectedEditProfileModal onClose={() => setShowEditProfile(false)} onSaved={handleProfileSaved} data={viewData} />}
+      {showChangePassword && <ConnectedChangePasswordModal onClose={() => setShowChangePassword(false)} />}
     </div>
   )
 }
