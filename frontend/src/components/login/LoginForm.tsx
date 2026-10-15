@@ -14,8 +14,8 @@ export default function LoginForm({ onLogin, onGo, credentials }: { onLogin: (ro
     e.preventDefault()
     setLoading(true); setError('')
     try {
-      const result = await authenticate({ username, password }, credentials)
-      onLogin(result.role)
+      const result = await authenticate({ username, password })
+      onLogin(result.user.role === 'ADMIN' ? 'admin' : 'tenant')
     } catch {
       setError('Tên đăng nhập hoặc mật khẩu không chính xác.')
     } finally {
@@ -56,7 +56,7 @@ export default function LoginForm({ onLogin, onGo, credentials }: { onLogin: (ro
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
               className="w-4 h-4 accent-[#f59e0b]" />
-            <span className="text-[13px] text-gray-500">Ghi nhớ đăng nhập</span>
+            <span className="text-[13px] text-gray-500">Ghi nhớ đăng nhập (thời hạn mặc định)</span>
           </label>
           <button type="button" onClick={() => onGo('forgot1')} className="text-[13px] font-semibold" style={{ color: '#f59e0b' }}>
             Quên mật khẩu?
@@ -81,8 +81,12 @@ export default function LoginForm({ onLogin, onGo, credentials }: { onLogin: (ro
         <button onClick={() => onGo('signup')} className="font-semibold" style={{ color: '#f59e0b' }}>Đăng ký ngay</button>
       </p>
 
-      <div className="mt-4 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-        <p className="text-xs text-amber-700 text-center">Demo: <strong>admin</strong> / <strong>admin123</strong> · <strong>tenant</strong> / <strong>tenant123</strong></p>
+      <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-100 space-y-2">
+        <p className="text-xs text-amber-700 text-center">Tài khoản seed dùng để điền nhanh, đăng nhập vẫn gọi API thật.</p>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => { setUsername(credentials.admin.username); setPassword(credentials.admin.password); setError('') }} className="flex-1 py-2 rounded-lg border border-amber-200 bg-white text-xs font-semibold text-amber-800 hover:bg-amber-100">Điền Admin</button>
+          <button type="button" onClick={() => { setUsername(credentials.tenant.username); setPassword(credentials.tenant.password); setError('') }} className="flex-1 py-2 rounded-lg border border-amber-200 bg-white text-xs font-semibold text-amber-800 hover:bg-amber-100">Điền Tenant</button>
+        </div>
       </div>
     </div>
   )

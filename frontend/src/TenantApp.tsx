@@ -149,7 +149,7 @@ export default function TenantApp({ onLogout }: Props) {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          {currentPage === 'dashboard' && <TenantDashboard linked={true} />}
+          {currentPage === 'dashboard' && <TenantDashboard />}
           {currentPage === 'profile'   && <TenantProfile />}
           {currentPage === 'settings'  && <Settings role="tenant" />}
         </main>

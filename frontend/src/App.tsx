@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
+import TenantRegistrationQueue from './pages/TenantRegistrationQueue'
 import TenantApp from './TenantApp'
+import { apiRequest, clearAuthToken, getAuthToken } from './services/api'
 
-type Page = 'dashboard' | 'settings'
+type Page = 'dashboard' | 'settings' | 'tenant-registrations'
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
@@ -23,11 +25,18 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>,
   },
+  {
+    id: 'tenant-registrations', label: 'Yêu cầu Tenant',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m6-10a4 4 0 100-8 4 4 0 000 8zm7-1h6m-3-3v6" />
+    </svg>,
+  },
 ]
 
 const pageTitles: Record<Page, string> = {
   dashboard: 'Tổng quan',
   settings: 'Cài đặt',
+  'tenant-registrations': 'Yêu cầu đăng ký Tenant',
 }
 
 function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
@@ -266,17 +275,45 @@ function Sidebar({ currentPage, onNavigate, onLogoutClick, collapsed, onToggle }
 
 export default function App() {
   const [role, setRole] = useState<'admin' | 'tenant' | null>(null)
+  const [restoringSession, setRestoringSession] = useState(true)
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const token = getAuthToken()
+    if (!token) {
+      setRestoringSession(false)
+      return () => { active = false }
+    }
+
+    apiRequest<{ user: { role: 'ADMIN' | 'TENANT' } }>('/users/me')
+      .then((profile) => {
+        if (active) setRole(profile.user.role === 'ADMIN' ? 'admin' : 'tenant')
+      })
+      .catch(() => {
+        if (active) {
+          clearAuthToken()
+          setRole(null)
+        }
+      })
+      .finally(() => { if (active) setRestoringSession(false) })
+
+    return () => { active = false }
+  }, [])
+
+  if (restoringSession) {
+    return <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">Đang khôi phục phiên đăng nhập...</div>
+  }
 
   if (!role) {
     return <Login onLogin={(r) => { setRole(r); setCurrentPage('dashboard') }} />
   }
 
   if (role === 'tenant') {
-    return <TenantApp onLogout={() => setRole(null)} />
+    return <TenantApp onLogout={() => { clearAuthToken(); setRole(null) }} />
   }
   const pageTitle = pageTitles[currentPage]
 
@@ -324,13 +361,14 @@ export default function App() {
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard'      && <Dashboard />}
           {currentPage === 'settings'       && <Settings role="admin" />}
+          {currentPage === 'tenant-registrations' && <TenantRegistrationQueue />}
         </main>
       </div>
 
       {/* Logout confirmation modal */}
       {showLogoutModal && (
         <LogoutModal
-          onConfirm={() => { setRole(null); setShowLogoutModal(false) }}
+          onConfirm={() => { clearAuthToken(); setRole(null); setShowLogoutModal(false) }}
           onCancel={() => setShowLogoutModal(false)}
         />
       )}

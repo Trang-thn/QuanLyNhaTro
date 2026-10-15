@@ -11,7 +11,15 @@ export interface LoginFormState extends LoginCredentials {
 }
 
 export interface LoginResult {
-  role: AuthRole
+  token: string
+  user: {
+    id: string
+    username: string
+    fullName: string
+    email: string | null
+    phoneNumber: string | null
+    role: 'ADMIN' | 'TENANT'
+  }
 }
 
 export interface AuthCredentials {
