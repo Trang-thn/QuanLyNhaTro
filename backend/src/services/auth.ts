@@ -63,10 +63,26 @@ export async function registerAccount(input: Record<string, unknown>) {
       `INSERT INTO users (id, username, password_hash, full_name, email, phone_number, role, is_active)
        VALUES (?, ?, ?, ?, ?, ?, 'TENANT', TRUE)`,
       [id, username, passwordHash, fullName, email, phoneNumber]);
-    const linkedToContract = tenants.length > 0;
-    if (linkedToContract) await connection.execute('UPDATE tenants SET user_id = ? WHERE id = ?', [id, tenants[0].id]);
+    const linkedToTenant = tenants.length > 0;
+    if (linkedToTenant) {
+      await connection.execute('UPDATE tenants SET user_id = ? WHERE id = ?', [id, tenants[0].id]);
+    } else {
+      await connection.execute(
+        `INSERT INTO tenant_registration_requests (user_id, identity_card_number, status)
+         VALUES (?, ?, 'PENDING')`,
+        [id, identityCardNumber],
+      );
+    }
     await connection.commit();
-    return { id, username, fullName, email, role: 'TENANT' as const, linkedToContract };
+    return {
+      id,
+      username,
+      fullName,
+      email,
+      role: 'TENANT' as const,
+      linkedToTenant,
+      awaitingAdminReview: !linkedToTenant,
+    };
   } catch (error) {
     await connection.rollback();
     if (error instanceof HttpError) throw error;
