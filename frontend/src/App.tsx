@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import Rooms from './pages/Rooms'
-import Tenants from './pages/Tenants'
-import Contracts from './pages/Contracts'
-import Invoices from './pages/Invoices'
-import Maintenance from './pages/Maintenance'
-import Notifications from './pages/Notifications'
+import Rooms from './pages/rooms/RoomPage'
+// Temporarily disabled while the tenant module is unavailable. Restore this import and its nav/render references when the owner module is integrated.
+// import Tenants from './pages/Tenants'
+// Temporarily disabled while these owner modules are unavailable. Restore each import and its nav/render references when integrated.
+// import Contracts from './pages/Contracts'
+// import Invoices from './pages/Invoices'
+import Maintenance from './pages/issues/IssuesPage'
+import Notifications from './pages/notifications/NotificationPage'
 import Settings from './pages/Settings'
-import Utilities from './pages/Utilities'
+// import Utilities from './pages/Utilities'
 import TenantApp from './TenantApp'
 import { notifications as allNotifications } from './data/mockData'
 
@@ -30,12 +32,15 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>,
   },
+  /* Temporarily disabled tenant-owned navigation; restore with its page component.
   {
     id: 'tenants', label: 'Khách thuê',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>,
   },
+  */
+  /* Temporarily disabled owner modules; restore these navigation entries with their page components.
   {
     id: 'contracts', label: 'Hợp đồng',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,6 +59,7 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>,
   },
+  */
   {
     id: 'maintenance', label: 'Sự cố',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,10 +410,11 @@ export default function App() {
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard'      && <Dashboard />}
           {currentPage === 'rooms'          && <Rooms />}
-          {currentPage === 'tenants'        && <Tenants />}
+          {/* Restore tenant/contract/invoice/utilities render branches with their owner modules. */}
+          {/* {currentPage === 'tenants'        && <Tenants />}
           {currentPage === 'contracts'      && <Contracts />}
           {currentPage === 'invoices'       && <Invoices />}
-          {currentPage === 'utilities'      && <Utilities />}
+          {currentPage === 'utilities'      && <Utilities />} */}
           {currentPage === 'maintenance'    && <Maintenance />}
           {currentPage === 'notifications'  && <Notifications />}
           {currentPage === 'settings'       && <Settings />}
