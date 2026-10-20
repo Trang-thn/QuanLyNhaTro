@@ -457,9 +457,9 @@ export default function RoomPage() {
   }, [currentQuery.floor, currentQuery.status, fetchAmenities, fetchRoomTypes, fetchRooms])
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {devPreview && (
-        <div role="status" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           Development preview: mock data only. No API requests are sent from this route.
         </div>
       )}
@@ -480,19 +480,25 @@ export default function RoomPage() {
         </button>
       )}
       {detailLoading && <div role="status" className="fixed top-4 left-1/2 z-[60] rounded-lg bg-white px-4 py-2 text-sm shadow">Loading room details...</div>}
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
-        <span className="text-gray-400">Tổng quan</span>
-        <span className="text-gray-300">/</span>
-        <span className="font-semibold" style={{ color: NAVY }}>Phòng trọ</span>
-      </nav>
+      <header className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <nav className="flex items-center gap-1.5 text-xs font-medium text-gray-500" aria-label="Breadcrumb">
+            <span>Tổng quan</span>
+            <span aria-hidden="true" className="text-gray-300">/</span>
+            <span style={{ color: NAVY }}>Phòng trọ</span>
+          </nav>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: NAVY }}>Quản lý phòng trọ</h1>
+          <p className="text-sm text-gray-500">Theo dõi phòng, tiện nghi và loại phòng trong nhà trọ.</p>
+        </div>
 
-      {/* Tab bar + action button */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-0.5 p-1 rounded-lg" style={{ background: '#f3f4f6' }}>
+        {/* Tab bar + action button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div role="group" aria-label="Khu vực quản lý" className="flex w-full sm:w-auto items-center gap-1 p-1 rounded-xl border border-gray-200 bg-white overflow-x-auto">
           <button
+            type="button"
             onClick={() => setActiveTab('rooms')}
-            className="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+            aria-pressed={activeTab === 'rooms'}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             style={{
               background: activeTab === 'rooms' ? NAVY : 'transparent',
               color: activeTab === 'rooms' ? 'white' : '#6b7280',
@@ -501,8 +507,10 @@ export default function RoomPage() {
             Danh sách phòng
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('amenities')}
-            className="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+            aria-pressed={activeTab === 'amenities'}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             style={{
               background: activeTab === 'amenities' ? NAVY : 'transparent',
               color: activeTab === 'amenities' ? 'white' : '#6b7280',
@@ -511,8 +519,10 @@ export default function RoomPage() {
             Tiện nghi
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('types')}
-            className="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+            aria-pressed={activeTab === 'types'}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             style={{
               background: activeTab === 'types' ? NAVY : 'transparent',
               color: activeTab === 'types' ? 'white' : '#6b7280',
@@ -525,7 +535,7 @@ export default function RoomPage() {
         {activeTab === 'rooms' && (
           <button
             onClick={handleAddRoom}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm transition hover:brightness-95 active:scale-95"
+            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm transition hover:brightness-95 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
             style={{ background: AMBER }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -535,12 +545,13 @@ export default function RoomPage() {
           </button>
         )}
       </div>
+      </header>
 
       {/* ── TAB: Danh sách phòng ── */}
       {activeTab === 'rooms' && (
         <>
           {/* Filter bar */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
+          <section aria-label="Tìm kiếm và lọc phòng" className="bg-white rounded-2xl border border-gray-200 px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5">
             <FilterDropdown
               value={filter.status}
               onChange={v => setFilter(f => ({ ...f, status: v }))}
@@ -567,50 +578,51 @@ export default function RoomPage() {
                 ...roomTypes.map(t => ({ value: t.id, label: t.name })),
               ]}
             />
-            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 flex-1 min-w-[180px] hover:border-gray-300 transition">
+            <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 flex-1 min-w-[180px] hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition">
               <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 type="text"
                 placeholder="Nhập số phòng..."
+                aria-label="Tìm theo số phòng"
                 value={filter.search}
                 onChange={e => setFilter(f => ({ ...f, search: e.target.value }))}
-                className="flex-1 text-sm text-gray-700 outline-none bg-transparent placeholder:text-gray-400"
+                className="flex-1 min-w-0 text-sm text-gray-700 outline-none bg-transparent placeholder:text-gray-400"
               />
               {filter.search && (
-                <button onClick={() => setFilter(f => ({ ...f, search: '' }))} className="text-gray-400 hover:text-gray-600 transition">
+                <button type="button" aria-label="Xóa nội dung tìm kiếm" onClick={() => setFilter(f => ({ ...f, search: '' }))} className="rounded-md p-1 text-gray-400 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               )}
             </div>
-          </div>
+          </section>
 
           {/* Room grid / Empty states */}
           {loadingRooms ? (
-            <div role="status" className="py-12 text-center text-sm text-gray-500">Loading rooms...</div>
+            <div role="status" className="rounded-2xl border border-gray-200 bg-white py-14 text-center text-sm text-gray-600">Loading rooms...</div>
           ) : roomLoadError && rooms.length === 0 ? (
-            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 py-12 text-center text-sm text-red-700">Room data could not be loaded. Use retry to request it again.</div>
+            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-5 py-12 text-center text-sm text-red-700">Room data could not be loaded. Use retry to request it again.</div>
           ) : rooms.length === 0 ? (
             <RoomEmptyState onAdd={() => setModal({ kind: 'add' })} />
           ) : filteredRooms.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-16 gap-3">
+            <div className="rounded-2xl border border-gray-200 bg-white flex flex-col items-center justify-center px-5 py-16 gap-3">
               <svg className="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <p className="text-sm text-gray-400">Không tìm thấy phòng nào phù hợp với bộ lọc</p>
               <button
                 onClick={() => setFilter({ status: 'ALL', floor: 'ALL', type: 'ALL', search: '' })}
-                className="text-xs font-medium transition"
+                className="rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 style={{ color: AMBER }}
               >
                 Xóa bộ lọc
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
               {filteredRooms.map(room => (
                 <RoomCard key={room.id} room={room} onAction={handleMenuAction} />
               ))}

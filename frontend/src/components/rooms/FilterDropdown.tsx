@@ -14,6 +14,7 @@ interface Props {
 export function FilterDropdown({ value, onChange, options }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const selected = options.find(o => o.value === value) ?? options[0]
 
@@ -28,7 +29,12 @@ export function FilterDropdown({ value, onChange, options }: Props) {
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [open])
@@ -36,12 +42,16 @@ export function FilterDropdown({ value, onChange, options }: Props) {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white hover:border-gray-300 transition cursor-pointer select-none whitespace-nowrap"
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="flex w-full sm:w-auto items-center justify-between gap-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition cursor-pointer select-none whitespace-nowrap"
       >
         {selected.label}
         <svg
+          aria-hidden="true"
           className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
@@ -50,13 +60,13 @@ export function FilterDropdown({ value, onChange, options }: Props) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-30 min-w-full">
+        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-30 min-w-full max-h-64 overflow-y-auto">
           {options.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => { onChange(opt.value); setOpen(false) }}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors whitespace-nowrap
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:bg-blue-50
                 ${opt.value === value
                   ? 'text-[#0d2137] font-semibold bg-gray-50'
                   : 'text-gray-700 hover:bg-gray-50'

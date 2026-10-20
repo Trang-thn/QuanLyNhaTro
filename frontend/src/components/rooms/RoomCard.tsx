@@ -91,6 +91,7 @@ interface Props {
 export function RoomCard({ room, onAction }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
 
@@ -114,26 +115,31 @@ export function RoomCard({ room, onAction }: Props) {
 
   useEffect(() => {
     if (!menuOpen) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [menuOpen])
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <article className="min-w-0 bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 flex flex-col gap-4 transition-colors hover:border-blue-200">
       {/* Header: room number + type badge + status badge */}
-      <div className="flex items-center gap-2">
-        <span className="font-bold text-base leading-tight" style={{ color: '#0d2137' }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="font-bold text-lg leading-tight tracking-tight" style={{ color: '#0d2137' }}>
           {room.room_number}
-        </span>
+        </h2>
         {room.room_type_name && (
           <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 shrink-0">
             {ROOM_TYPE_SHORT[room.room_type_name ?? ''] ?? room.room_type_name}
           </span>
         )}
-        <div className="flex-1" />
+        <div className="flex-1 min-w-2" />
         <span
-          className="px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0"
+          className="px-2.5 py-1 rounded-full text-xs font-semibold shrink-0"
           style={{ background: statusCfg.bg, color: statusCfg.color }}
         >
           {statusCfg.label}
@@ -142,24 +148,24 @@ export function RoomCard({ room, onAction }: Props) {
 
       {/* Price */}
       {room.price != null && (
-        <p className="font-bold text-base" style={{ color: '#d97706', fontVariantNumeric: 'tabular-nums' }}>
+        <p className="font-bold text-lg leading-snug" style={{ color: '#b45309', fontVariantNumeric: 'tabular-nums' }}>
           {formatVND(room.price)}/tháng
         </p>
       )}
 
       {/* Floor + Area */}
-      <p className="text-sm text-gray-500">
-        Tầng {room.floor ?? '-'} • Diện tích: {room.area ?? '?'}m²
+      <p className="text-sm text-gray-600 leading-relaxed">
+        Tầng {room.floor ?? '-'} <span aria-hidden="true" className="mx-1 text-gray-300">•</span> Diện tích: {room.area ?? '?'}m²
       </p>
 
       {/* Divider */}
       <div className="border-t border-gray-100" />
 
       {/* Amenity icons + context menu trigger */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-gray-400">
+      <div className="flex items-center justify-between gap-3">
+        <div role="group" aria-label="Tiện nghi phòng" className="flex min-w-0 items-center gap-2 text-gray-500">
           {roomAmenities.map(a => (
-            <span key={a.id} title={a.name}>
+            <span key={a.id} title={a.name} role="img" aria-label={a.name}>
               <AmenityIcon name={a.name} />
             </span>
           ))}
@@ -167,8 +173,12 @@ export function RoomCard({ room, onAction }: Props) {
 
         <div className="relative" ref={menuRef}>
           <button
+            ref={menuButtonRef}
+            type="button"
             onClick={() => setMenuOpen(v => !v)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            aria-expanded={menuOpen}
+            aria-haspopup="true"
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
             title="Thao tác"
             aria-label="Mở menu thao tác"
           >
@@ -181,14 +191,15 @@ export function RoomCard({ room, onAction }: Props) {
 
           {menuOpen && (
             <div
-              className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-30 w-48"
+              className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-30 w-48 max-w-[calc(100vw-2rem)]"
               onClick={e => e.stopPropagation()}
             >
               {MENU_ITEMS.map(item => (
                 <button
                   key={item.action}
                   onClick={() => { setMenuOpen(false); onAction(room, item.action) }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  type="button"
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:bg-blue-50 transition-colors"
                 >
                   {item.label}
                 </button>
@@ -196,7 +207,8 @@ export function RoomCard({ room, onAction }: Props) {
               <div className="my-1 border-t border-gray-100" />
               <button
                 onClick={() => { setMenuOpen(false); onAction(room, 'delete') }}
-                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                type="button"
+                className="w-full text-left px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:bg-red-50 transition-colors"
               >
                 Xóa phòng
               </button>
@@ -204,6 +216,6 @@ export function RoomCard({ room, onAction }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </article>
   )
 }
