@@ -27,10 +27,10 @@ dist/
 .vite/
 .env
 .env.*
-<<<<<<< HEAD
 !.env.example
-plantUML
-promtdh.md
-=======
-!.env.example
->>>>>>> develop
+.codex/
+dist/
+test*
+AGENTS.md
+graphify-out
+trang/

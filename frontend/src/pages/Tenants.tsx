@@ -217,7 +217,7 @@ function DetailModal({ tenant, onClose, onEdit }: { tenant: Tenant; onClose: () 
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between">
           <div>
             <h3 className="font-bold text-lg" style={{ color: NAVY }}>Chi tiết khách thuê</h3>
-            <p className="text-sm text-gray-400 mt-0.5">{tenant.id} · Hồ sơ được cập nhật 28/09/2026</p>
+            <p className="text-sm text-gray-400 mt-0.5">{tenant.id} · Hồ sơ khách thuê</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition mt-0.5">
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -359,7 +359,7 @@ function HistoryModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void
 
         <div className="px-6 py-4 border-t border-gray-100 flex justify-between">
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Đóng</button>
-          <button className="px-5 py-2 rounded-lg text-white text-sm font-semibold transition" style={{ background: AMBER }}>Tạo hợp đồng</button>
+         
         </div>
       </div>
     </div>
@@ -615,7 +615,7 @@ export default function Tenants() {
         </div>
       )}
 
-      {/* Modals */}
+      {/*  các cửa sổ popup */}
       {modal?.type === 'add' && (
         <TenantFormModal mode="add" onClose={() => setModal(null)} onSave={handleAdd} />
       )}

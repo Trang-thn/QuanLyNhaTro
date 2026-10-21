@@ -1,10 +1,16 @@
 ﻿import { Router } from 'express';
-import { tenantRouter } from './tenantRoutes';
+import { authRouter } from './auth';
+import { dashboardRouter } from './dashboard';
+import { usersRouter } from './users';
+import { tenantRouter } from './tenant';
+import { adminRouter } from './admin';
 import { contractRouter } from './contractRoutes';
 export const apiRouter = Router();
 
 apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }));
-// Feature routers: auth, users, rooms, tenants, contracts, billing, maintenance, notifications, dashboard.
-
-apiRouter.use('/tenants', tenantRouter);
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', usersRouter);
+apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/tenant', tenantRouter);
+apiRouter.use('/admin', adminRouter);
 apiRouter.use('/contracts', contractRouter);

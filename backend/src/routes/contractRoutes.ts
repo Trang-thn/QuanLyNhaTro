@@ -1,14 +1,8 @@
 import { Router } from 'express';
-import {
-  getAllContracts,
-  createContract,
-  renewContract,
-  terminateContract,
-} from '../controllers/contractController';
+import { createContract, terminateContract } from '../controllers/contractController';
+import { authenticate, allowRoles } from '../middleware/auth';
 
 export const contractRouter = Router();
 
-contractRouter.get('/', getAllContracts);
-contractRouter.post('/', createContract);
-contractRouter.post('/:id/renew', renewContract);
-contractRouter.post('/:id/terminate', terminateContract);
+contractRouter.post('/', authenticate, allowRoles('ADMIN'), createContract);
+contractRouter.put('/:id/terminate', authenticate, allowRoles('ADMIN'), terminateContract);

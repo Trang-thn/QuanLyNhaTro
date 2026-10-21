@@ -1,5 +1,6 @@
-import { Contract } from '../../types/contract';
-import { rooms, tenants, getTenantName, getRoomNumber } from '../../data/mockData';
+import { Contract } from '../types/contract';
+import { rooms, tenants, getTenantName, getRoomNumber } from '../data/mockData';
+import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
 
 const NAVY = '#0d2137';
 const AMBER = '#f59e0b';
@@ -38,7 +39,7 @@ export default function ContractFormModal({ contract, onClose, onSubmit }: Contr
                 <input defaultValue={getRoomNumber(contract!.room_id)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-400 transition" />
               ) : (
                 <select className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
-                  {rooms.filter(r => r.status === 'TRONG').map(r => (
+                  {rooms.filter((r: { status: string; }) => r.status === 'TRONG').map((r: { id: Key | null | undefined; room_number: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }) => (
                     <option key={r.id}>{r.room_number}</option>
                   ))}
                 </select>
@@ -50,7 +51,7 @@ export default function ContractFormModal({ contract, onClose, onSubmit }: Contr
                 <input defaultValue={getTenantName(contract!.representative_tenant_id)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-400 transition" />
               ) : (
                 <select className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
-                  {tenants.map(t => <option key={t.id}>{t.full_name}</option>)}
+                  {tenants.map((t: { id: Key | null | undefined; full_name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }) => <option key={t.id}>{t.full_name}</option>)}
                 </select>
               )}
             </div>

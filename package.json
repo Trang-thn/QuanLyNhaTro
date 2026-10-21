@@ -10,5 +10,8 @@
   "devDependencies": {
     "@types/node": "^26.6.3",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "recharts": "^3.10.1"
   }
 }

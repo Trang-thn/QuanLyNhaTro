@@ -1,185 +1,74 @@
 import { Request, Response } from 'express';
-import {pool} from '../config/database';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import * as tenantService from '../services/tenant';
 
-// 1. Lấy danh sách tất cả khách thuê
-export const getAllTenants = async (_req: Request, res: Response) => {
+export async function getAllTenants(_req: Request, res: Response): Promise<void> {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(`
-      SELECT t.id, t.user_id, t.identity_card_number, t.issue_date, t.issue_place, 
-             t.permanent_address, t.emergency_contact, 
-             u.full_name, u.email, u.phone_number 
-      FROM tenants t
-      LEFT JOIN users u ON t.user_id = u.id
-      ORDER BY t.id DESC
-    `);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Lấy danh sách khách thuê thành công',
-      data: rows
-    });
- } catch (error: any) {
-  console.error("🔥 LỖI DATABASE CHI TIẾT:", error); // In ra màn hình Terminal Backend
-  return res.status(500).json({
-    success: false,
-    message: 'Lỗi hệ thống máy chủ',
-    errorDetails: error.message, // Hiển thị nguyên nhân lỗi thực sự
-    data: null
-  });
+    const tenants = await tenantService.getAllTenantsService();
+    res.status(200).json({ success: true, data: tenants });
+  } catch (error) {
+    console.error('Failed to get tenants:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
 }
-};
 
-// 2. Lấy chi tiết 1 khách thuê theo ID
-export const getTenantById = async (req: Request, res: Response) => {
+export async function getTenantById(req: Request, res: Response): Promise<void> {
   try {
-    const { id } = req.params;
-    const [rows] = await pool.query<RowDataPacket[]>(`
-      SELECT t.id, t.user_id, t.identity_card_number, t.issue_date, t.issue_place, 
-             t.permanent_address, t.emergency_contact, 
-             u.full_name, u.email, u.phone_number 
-      FROM tenants t
-      LEFT JOIN users u ON t.user_id = u.id
-      WHERE t.id = ?
-    `, [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy hồ sơ khách thuê',
-        data: null
-      });
+    const tenant = await tenantService.getTenantByIdService(req.params.id);
+    if (!tenant) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ khách thuê' });
+      return;
     }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Lấy thông tin khách thuê thành công',
-      data: rows[0]
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống máy chủ',
-      data: null
-    });
+    res.status(200).json({ success: true, data: tenant });
+  } catch (error) {
+    console.error('Failed to get tenant by id:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
-};
+}
 
-// 3. Tìm khách thuê theo số CCCD
-export const getTenantByCCCD = async (req: Request, res: Response) => {
+export async function getTenantByCCCD(req: Request, res: Response): Promise<void> {
   try {
-    const { cccd } = req.params;
-    const [rows] = await pool.query<RowDataPacket[]>(`
-      SELECT id, user_id, identity_card_number, issue_date, issue_place, permanent_address, emergency_contact 
-      FROM tenants 
-      WHERE identity_card_number = ?
-    `, [cccd]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy thông tin CCCD này',
-        data: null
-      });
+    const tenant = await tenantService.getTenantByCCCDService(req.params.cccd);
+    if (!tenant) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ theo CCCD' });
+      return;
     }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Tìm thấy thông tin khách thuê',
-      data: rows[0]
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống máy chủ',
-      data: null
-    });
+    res.status(200).json({ success: true, data: tenant });
+  } catch (error) {
+    console.error('Failed to get tenant by CCCD:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
-};
+}
 
-// 4. Tạo mới hồ sơ khách thuê
-export const createTenant = async (req: Request, res: Response) => {
+export async function createTenant(req: Request, res: Response): Promise<void> {
   try {
-    const { identityCardNumber, issueDate, issuePlace, permanentAddress, emergencyContact, userId } = req.body;
+    const newTenant = await tenantService.createTenantService(req.body);
+    res.status(201).json({ success: true, message: 'Tạo hồ sơ khách thuê thành công', data: newTenant });
+  } catch (error: any) {
+    console.error('Failed to create tenant:', error);
+    res.status(400).json({ success: false, message: error.message || 'Lỗi dữ liệu đầu vào' });
+  }
+}
 
-    if (!identityCardNumber) {
-      return res.status(400).json({
-        success: false,
-        message: 'Số CCCD/CMND là bắt buộc',
-        data: null
-      });
+export async function updateTenant(req: Request, res: Response): Promise<void> {
+  try {
+    const updated = await tenantService.updateTenantService(req.params.id, req.body);
+    res.status(200).json({ success: true, message: 'Cập nhật hồ sơ thành công', data: updated });
+  } catch (error: any) {
+    console.error('Failed to update tenant:', error);
+    res.status(400).json({ success: false, message: error.message || 'Lỗi cập nhật dữ liệu' });
+  }
+}
+
+export async function deleteTenant(req: Request, res: Response): Promise<void> {
+  try {
+    const success = await tenantService.deleteTenantService(req.params.id);
+    if (!success) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ để xóa' });
+      return;
     }
-
-    const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM tenants WHERE identity_card_number = ?', [identityCardNumber]);
-    if (existing.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Số CCCD/CMND này đã tồn tại trong hệ thống',
-        data: null
-      });
-    }
-
-    await pool.query<ResultSetHeader>(`
-      INSERT INTO tenants (id, user_id, identity_card_number, issue_date, issue_place, permanent_address, emergency_contact)
-      VALUES (UUID(), ?, ?, ?, ?, ?, ?)
-    `, [userId || null, identityCardNumber, issueDate || null, issuePlace || null, permanentAddress || null, emergencyContact || null]);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Tạo hồ sơ khách thuê thành công',
-      data: null
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống khi tạo hồ sơ khách thuê',
-      data: null
-    });
+    res.status(200).json({ success: true, message: 'Xóa hồ sơ thành công' });
+  } catch (error) {
+    console.error('Failed to delete tenant:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
-};
-
-// 5. Cập nhật thông tin khách thuê
-export const updateTenant = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { identityCardNumber, issueDate, issuePlace, permanentAddress, emergencyContact } = req.body;
-
-    await pool.query(`
-      UPDATE tenants 
-      SET identity_card_number = ?, issue_date = ?, issue_place = ?, permanent_address = ?, emergency_contact = ?
-      WHERE id = ?
-    `, [identityCardNumber, issueDate, issuePlace, permanentAddress, emergencyContact, id]);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Cập nhật thông tin khách thuê thành công',
-      data: null
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống khi cập nhật thông tin',
-      data: null
-    });
-  }
-};
-
-// 6. Xóa khách thuê
-export const deleteTenant = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM tenants WHERE id = ?', [id]);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Đã xóa hồ sơ khách thuê thành công',
-      data: null
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi hệ thống khi xóa hồ sơ khách thuê',
-      data: null
-    });
-  }
-};
+}
