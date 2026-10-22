@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8445'),
+      port: parseInt(process.env.PORT || '5173'),
       strictPort: true,
       watch: {
         ignored: ['**/.figma/**'],
@@ -48,11 +48,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/health': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
+      port: parseInt(process.env.PORT || '5173'),
     },
   }
 })
