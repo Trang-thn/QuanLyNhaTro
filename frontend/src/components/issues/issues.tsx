@@ -1,6 +1,8 @@
 import type { Issue, IssueStatus, Sumary } from "../../types/issues"
 import { STATUS_LABEL, STATUS_CLASSES, STATUS_ICONS } from "../../data/issues/issues"
 import { useState } from "react"
+import { IssueIcon } from './IssueIcon'
+import { IssueImage } from './IssueImage'
 const formatCost = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)}đ`
 export function SummaryCard({
     label,
@@ -11,7 +13,7 @@ export function SummaryCard({
     return (
         <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-[0_2px_4px_rgba(74,59,27,0.06)]">
             <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconBackground}`}>
-                <img src={icon} alt="" width="20" height="20" />
+                <IssueIcon name={icon} />
             </div>
             <div className="min-w-0">
                 <p className="truncate font-['Manrope:Medium'] text-[13px] font-medium text-[#4f5e74]">{label}</p>
@@ -42,7 +44,7 @@ export function IssueCard({
                 <span
                     className={`flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 font-['Manrope:Bold'] text-[11px] font-bold ${STATUS_CLASSES[issue.status]}`}
                 >
-                    <img src={STATUS_ICONS[issue.status]} alt="" width="12" height="12" />
+                    <IssueIcon name={STATUS_ICONS[issue.status]} className="size-3" />
                     {STATUS_LABEL[issue.status]}
                 </span>
             </div>
@@ -57,12 +59,12 @@ export function IssueCard({
             <div className="flex flex-col gap-3 border-t border-[#f5efe0] pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="flex items-center gap-1.5 font-['Manrope:Regular'] text-[13px] text-[#4f5e74]">
-                        <img src="/assets/4189a.svg" alt="" width="14" height="14" />
+                        <IssueIcon name="person" className="size-3.5" />
                         Người báo:{' '}
                         <strong className="font-['Manrope:SemiBold'] font-semibold text-[#1c2534]">{issue.reporter}</strong>
                     </span>
                     <span className="flex items-center gap-1.5 font-['Manrope:Regular'] text-xs text-[#8c9bae]">
-                        <img src="/assets/ccb29.svg" alt="" width="14" height="14" />
+                        <IssueIcon name="calendar" className="size-3.5" />
                         {issue.date}
                     </span>
                 </div>
@@ -159,11 +161,7 @@ export function DetailModal({
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <p className="font-['Manrope:Regular'] text-xs uppercase text-[#8c9bae]">Ảnh minh họa</p>
-                        {issue.imageUrl ? (
-                            <img src={issue.imageUrl} alt="Ảnh sự cố" className="h-40 w-full rounded-lg object-cover" />
-                        ) : (
-                            <p className="rounded-lg border border-dashed border-[#d8e0ea] p-6 text-sm text-[#8c9bae]">Chưa có ảnh được lưu.</p>
-                        )}
+                        <IssueImage src={issue.imageUrl} className="h-40 w-full rounded-lg border border-dashed border-[#d8e0ea]" />
                     </div>
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         <Info label="Chi phí sửa chữa" value={issue.actualCost ? formatCost(issue.actualCost) : 'Chưa cập nhật'} cost />
@@ -253,7 +251,7 @@ export function CompleteModal({
             <div className="w-full max-w-[400px] rounded-2xl border-2 border-[#eadfc9] bg-white p-6 shadow-[0_12px_12px_rgba(23,43,77,0.12)]">
                 <div className="flex items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fff3e0]">
-                        <img src="/assets/5a470.svg" alt="" width="20" height="20" />
+                        <IssueIcon name="check" className="size-5 text-[#d97706]" />
                     </div>
                     <p id="complete-issue-title" className="font-['Manrope:ExtraBold'] text-lg font-extrabold text-[#1c2534]">
                         Hoàn thành sự cố?

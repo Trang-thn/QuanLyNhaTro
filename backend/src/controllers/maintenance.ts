@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as maintenanceService from '../services/maintenance.service';
+import * as maintenanceImageService from '../services/maintenance-image.service';
 import type { CreateMaintenanceInput, MaintenanceStatus, UpdateMaintenanceInput } from '../types/maintenance';
 
 const validId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -54,7 +55,7 @@ export async function createMaintenanceRequest(req: Request, res: Response) {
     return res.status(400).json({ message: 'Request body must be an object' });
   }
   const body = req.body as Record<string, unknown>;
-  if (Object.keys(body).some((key) => !['room_id', 'title', 'description'].includes(key))) {
+  if (Object.keys(body).some((key) => !['room_id', 'title', 'description', 'image_url'].includes(key))) {
     return res.status(400).json({ message: 'Request contains unsupported fields' });
   }
   if (typeof body.room_id !== 'string' || !validId(body.room_id)) {
@@ -66,14 +67,52 @@ export async function createMaintenanceRequest(req: Request, res: Response) {
   if (typeof body.description !== 'string' || !body.description.trim()) {
     return res.status(400).json({ message: 'description is required' });
   }
+  if (body.image_url !== undefined && (typeof body.image_url !== 'string' || !/^\/maintenance-requests\/images\/[0-9a-f-]{36}_[0-9a-f-]{36}\.(?:jpg|png|webp|gif|bmp|tif|ico|avif|heic|heif|jp2|jxl)$/i.test(body.image_url))) {
+    return res.status(400).json({ message: 'image_url is invalid' });
+  }
   try {
     return res.status(201).json({
       data: await maintenanceService.createMaintenanceRequest(req.user, {
         room_id: body.room_id as string,
         title: body.title as string,
         description: body.description as string,
+        ...(body.image_url ? { image_url: body.image_url as string } : {}),
       } satisfies CreateMaintenanceInput),
     });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function uploadMaintenanceImage(req: Request, res: Response) {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    return res.status(400).json({ message: 'An image file is required' });
+  }
+  try {
+    const image = await maintenanceImageService.saveMaintenanceImage(req.user, req.body);
+    return res.status(201).json({ data: image });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function getMaintenanceImage(req: Request, res: Response) {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const image = await maintenanceImageService.readMaintenanceImage(req.user, req.params.filename);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.type(image.mimeType).send(image.buffer);
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function deleteUnattachedMaintenanceImage(req: Request, res: Response) {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    await maintenanceImageService.deleteUnattachedMaintenanceImage(req.user, req.params.filename);
+    return res.status(204).end();
   } catch (error) {
     return sendError(res, error);
   }

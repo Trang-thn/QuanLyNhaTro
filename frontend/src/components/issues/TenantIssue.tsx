@@ -1,9 +1,12 @@
-import type { Incident, Status } from "../../types/issues";
-import { useState } from "react";
+import type { Incident, IssueIconName, Status } from "../../types/issues";
+import { useEffect, useState } from "react";
 import type { MaintenanceRoomDTO } from '../../services/maintenanceService';
+import { IssueIcon } from './IssueIcon';
+import { IssueImage } from './IssueImage';
 const statusLabel: Record<Status, string> = { TIEP_NHAN: 'Tiếp nhận', DANG_XU_LY: 'Đang xử lý', HOAN_THANH: 'Hoàn thành' }
 const statusClass: Record<Status, string> = { TIEP_NHAN: 'bg-[#fef3c7] text-[#b45309]', DANG_XU_LY: 'bg-[#ebf3fe] text-[#3b82f6]', HOAN_THANH: 'bg-[#e6f4ea] text-[#16885b]' }
 const formatCost = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)}đ`
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 export function Stat({
     label,
     value,
@@ -11,7 +14,7 @@ export function Stat({
 }: {
     label: string;
     value: number;
-    icon: string;
+    icon: IssueIconName;
 }) {
     return (
         <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#e5e7eb] bg-white p-5">
@@ -19,7 +22,7 @@ export function Stat({
                 <span className="font-['Inter:Bold'] text-sm font-bold text-[#4f5e74]">
                     {label}
                 </span>
-                <img src={icon} alt="" width="32" height="32" />
+                <IssueIcon name={icon} className="size-8 text-[#d97706]" />
             </div>
             <strong className="font-['Inter:Extra_Bold'] text-2xl font-extrabold text-[#1f2937]">
                 {value}
@@ -48,7 +51,7 @@ export function IncidentModal({
                         Chi tiết sự cố
                     </p>
                     <button type="button" onClick={close} aria-label="Đóng">
-                        <img src="/assets/6644a.svg" alt="" width="24" height="24" />
+                        <IssueIcon name="close" className="size-5" />
                     </button>
                 </div>
                 <div className="flex flex-col gap-5 p-6">
@@ -78,17 +81,7 @@ export function IncidentModal({
                             Ảnh minh họa
                         </p>
                         <div className="flex items-center gap-4 rounded-lg border border-[#e5e7eb] bg-[#fff9f2] p-3">
-                            {incident.imageUrl ? (
-                                <img
-                                    src={incident.imageUrl}
-                                    alt="Ảnh minh họa sự cố"
-                                    className="size-14 rounded object-cover"
-                                />
-                            ) : (
-                                <div className="flex size-14 items-center justify-center rounded border border-[#d8e0ea] bg-white">
-                                    <img src="/assets/c4d33.svg" alt="" width="24" height="24" />
-                                </div>
-                            )}
+                            <IssueImage src={incident.imageUrl} className="size-14 shrink-0 rounded border border-[#d8e0ea] bg-white" />
                             <div>
                                 <p className="font-['Inter:Bold'] text-sm font-bold text-[#1f2937]">
                                     {incident.imageName ?? 'Chưa có ảnh được lưu'}
@@ -152,7 +145,7 @@ export function AddModal({
     error,
 }: {
     close: () => void;
-    save: (input: { room_id: string; title: string; description: string }) => Promise<void>;
+    save: (input: { room_id: string; title: string; description: string }, imageFile?: File) => Promise<void>;
     rooms: MaintenanceRoomDTO[];
     saving?: boolean;
     error?: string | null;
@@ -161,10 +154,47 @@ export function AddModal({
         [description, setDescription] = useState(""),
         [roomId, setRoomId] = useState(rooms[0]?.id ?? ''),
         [submitted, setSubmitted] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageError, setImageError] = useState<string | null>(null);
+    const [previewError, setPreviewError] = useState(false);
+
+    useEffect(() => {
+        if (!imageFile) {
+            setImagePreview(null);
+            setPreviewError(false);
+            return;
+        }
+
+        const previewUrl = URL.createObjectURL(imageFile);
+        setImagePreview(previewUrl);
+        setPreviewError(false);
+        return () => URL.revokeObjectURL(previewUrl);
+    }, [imageFile]);
+
+    const selectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        if (file.type && !file.type.startsWith('image/')) {
+            setImageFile(null);
+            setImageError('Vui lòng chọn một tệp hình ảnh.');
+            return;
+        }
+        if (file.size > MAX_IMAGE_SIZE) {
+            setImageFile(null);
+            setImageError('Ảnh phải có dung lượng không quá 5 MB.');
+            return;
+        }
+
+        setImageError(null);
+        setImageFile(file);
+    };
     const submit = () => {
         setSubmitted(true);
         if (!roomId || !title.trim() || !description.trim()) return;
-        void save({ room_id: roomId, title: title.trim(), description: description.trim() });
+        void save({ room_id: roomId, title: title.trim(), description: description.trim() }, imageFile ?? undefined);
     };
     return (
         <div
@@ -179,7 +209,7 @@ export function AddModal({
                         Báo sự cố mới
                     </p>
                     <button type="button" onClick={close} aria-label="Đóng">
-                        <img src="/assets/6644a.svg" alt="" width="24" height="24" />
+                        <IssueIcon name="close" className="size-5" />
                     </button>
                 </div>
                 <div className="flex flex-col gap-5 p-6">
@@ -222,13 +252,37 @@ export function AddModal({
                         />
                     </Field>
                     <div>
-                        <p className="mb-2 font-['Inter:Bold'] text-[13px] font-bold text-[#4f5e74]">
-                            Ảnh minh họa (chưa hỗ trợ lưu)
-                        </p>
-                        <div className="flex min-h-20 items-center gap-3 rounded-lg border border-dashed border-[#d8e0ea] bg-[#fff9f2] p-4 text-sm text-[#8c9bae]">
-                            <img src="/assets/c4d33.svg" alt="" width="32" height="32" />
-                            Chưa có dịch vụ lưu ảnh. Báo cáo sẽ chỉ lưu tiêu đề và mô tả.
+                        <p className="mb-2 font-['Inter:Bold'] text-[13px] font-bold text-[#4f5e74]">Ảnh minh họa</p>
+                        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-[#d8e0ea] bg-[#fff9f2] p-4 sm:flex-row sm:items-center">
+                            {imagePreview && !previewError ? (
+                                <img src={imagePreview} alt={`Ảnh xem trước: ${imageFile?.name ?? ''}`} onError={() => setPreviewError(true)} width="112" height="84" className="h-24 w-32 rounded-md border border-[#e5e7eb] object-cover" />
+                            ) : (
+                                <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-white text-[#8c9bae]" aria-hidden="true">
+                                    <IssueIcon name="image" className="size-7" />
+                                </span>
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <p className="break-words text-sm font-semibold text-[#1f2937]">{imageFile?.name ?? 'Chọn ảnh từ thiết bị'}</p>
+                                <p id="maintenance-image-help" className="mt-1 text-xs leading-5 text-[#64748b]">JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF, HEIC/HEIF, ICO, JPEG 2000 hoặc JPEG XL; tối đa 5 MB.</p>
+                                {previewError && <p className="mt-1 text-xs text-amber-700">Trình duyệt không xem trước được định dạng này; ảnh vẫn được gửi lên khi bạn lưu báo cáo.</p>}
+                                <div className="mt-3 flex flex-wrap items-center gap-3">
+                                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#d8e0ea] bg-white px-3 py-2 text-sm font-semibold text-[#172b4d] hover:bg-slate-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#172b4d]">
+                                        <IssueIcon name="image" className="size-4" />
+                                        {imageFile ? 'Chọn ảnh khác' : 'Duyệt tệp'}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={selectImage}
+                                            aria-label="Chọn ảnh minh họa từ thiết bị"
+                                            aria-describedby="maintenance-image-help"
+                                            className="peer sr-only"
+                                        />
+                                    </label>
+                                    {imageFile && <button type="button" onClick={() => { setImageFile(null); setImageError(null); }} className="rounded px-2 py-1 text-sm font-medium text-red-600 hover:bg-red-50">Bỏ ảnh</button>}
+                                </div>
+                            </div>
                         </div>
+                        {imageError && <p role="alert" className="mt-2 text-sm text-red-600">{imageError}</p>}
                     </div>
                     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
                 </div>

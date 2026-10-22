@@ -1,4 +1,4 @@
-import type { Issue, IssueStatus, Incident } from "../../types/issues";
+import type { Issue, IssueStatus, Incident, IssueIconName } from "../../types/issues";
 
 export const INITIAL_ISSUES: Issue[] = [
   {
@@ -61,10 +61,10 @@ export const STATUS_CLASSES: Record<IssueStatus, string> = {
   HOAN_THANH: "bg-[#e6f4ea] text-[#10b981]",
 };
 
-export const STATUS_ICONS: Record<IssueStatus, string> = {
-  TIEP_NHAN: "/assets/72ce5.svg",
-  DANG_XU_LY: "/assets/1cd6d.svg",
-  HOAN_THANH: "/assets/f3dc6.svg",
+export const STATUS_ICONS: Record<IssueStatus, IssueIconName> = {
+  TIEP_NHAN: "pending",
+  DANG_XU_LY: "wrench",
+  HOAN_THANH: "check",
 };
 export const initialIncidents: Incident[] = [
   {
@@ -77,7 +77,7 @@ export const initialIncidents: Incident[] = [
     time: "08:30",
     status: "TIEP_NHAN",
     imageName: "voi-nuoc-p101.jpg",
-    icon: "/assets/5c658.svg",
+    icon: "wrench",
   },
   {
     id: "2",
@@ -88,7 +88,7 @@ export const initialIncidents: Incident[] = [
     time: "19:15",
     status: "DANG_XU_LY",
     imageName: "may-lanh-p101.jpg",
-    icon: "/assets/d8e28.svg",
+    icon: "wrench",
   },
   {
     id: "3",
@@ -101,6 +101,6 @@ export const initialIncidents: Incident[] = [
     status: "HOAN_THANH",
     imageName: "den-phong-p101.jpg",
     cost: 80000,
-    icon: "/assets/89a79.svg",
+    icon: "wrench",
   },
 ];

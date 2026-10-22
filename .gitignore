@@ -34,3 +34,7 @@ test*
 AGENTS.md
 graphify-out
 trang/
+/playwright-report/
+/node_modules/
+/test-results/
+/frontend/tsconfig.tsbuildinfo

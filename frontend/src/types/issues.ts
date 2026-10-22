@@ -1,5 +1,17 @@
 export type IssueStatus = "TIEP_NHAN" | "DANG_XU_LY" | "HOAN_THANH";
 export type IssueFilter = "ALL" | IssueStatus;
+export type IssueIconName =
+  | 'report'
+  | 'pending'
+  | 'wrench'
+  | 'check'
+  | 'person'
+  | 'calendar'
+  | 'image'
+  | 'close'
+  | 'money'
+  | 'room'
+  | 'warning';
 
 export interface Issue {
   id: string;
@@ -18,7 +30,7 @@ export interface Issue {
 export interface Sumary {
   label: string;
   value: number;
-  icon: string;
+  icon: IssueIconName;
   iconBackground: string;
 }
 export type Status = "TIEP_NHAN" | "DANG_XU_LY" | "HOAN_THANH";
@@ -34,5 +46,5 @@ export interface Incident {
   imageName?: string;
   imageUrl?: string;
   cost?: number;
-  icon: string;
+  icon: IssueIconName;
 }

@@ -25,6 +25,7 @@ export interface CreateMaintenanceInput {
   room_id: string;
   title: string;
   description: string;
+  image_url?: string;
 }
 
 export interface UpdateMaintenanceInput {

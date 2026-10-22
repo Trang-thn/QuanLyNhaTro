@@ -1,14 +1,12 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../config/database';
+import { assertUploadedMaintenanceImage } from './maintenance-image.service';
+import { MaintenanceServiceError } from './maintenance.errors';
 import type { AuthUser } from '../types/auth';
 import type { CreateMaintenanceInput, MaintenanceRecord, MaintenanceRoomRecord, UpdateMaintenanceInput } from '../types/maintenance';
 
-export class MaintenanceServiceError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-  }
-}
+export { MaintenanceServiceError } from './maintenance.errors';
 
 interface TenantIdRow extends RowDataPacket { id: string; }
 interface IdRow extends RowDataPacket { id: string; }
@@ -87,6 +85,7 @@ export async function createMaintenanceRequest(user: AuthUser, input: CreateMain
       [user.id],
     );
     if (!tenants[0]) throw new MaintenanceServiceError(403, 'No tenant profile is linked to this account');
+    if (input.image_url) await assertUploadedMaintenanceImage(tenants[0].id, input.image_url);
 
     const [rooms] = await connection.query<IdRow[]>('SELECT id FROM rooms WHERE id = ? FOR UPDATE', [input.room_id]);
     if (!rooms[0]) throw new MaintenanceServiceError(404, 'Room not found');
@@ -106,9 +105,9 @@ export async function createMaintenanceRequest(user: AuthUser, input: CreateMain
     if (!contracts[0]) throw new MaintenanceServiceError(403, 'You do not have an active contract for this room');
 
     await connection.execute<ResultSetHeader>(
-      `INSERT INTO maintenance_requests (id, room_id, tenant_id, title, description, status, cost)
-       VALUES (?, ?, ?, ?, ?, 'TIEP_NHAN', 0)`,
-      [id, input.room_id, tenants[0].id, input.title.trim(), input.description.trim()],
+      `INSERT INTO maintenance_requests (id, room_id, tenant_id, title, description, image_url, status, cost)
+       VALUES (?, ?, ?, ?, ?, ?, 'TIEP_NHAN', 0)`,
+      [id, input.room_id, tenants[0].id, input.title.trim(), input.description.trim(), input.image_url ?? null],
     );
     await connection.commit();
   } catch (error) {

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Issue, IssueFilter, IssueStatus } from '../../types/issues';
 import { STATUS_CLASSES, STATUS_ICONS, STATUS_LABEL } from '../../data/issues/issues';
 import { DetailModal, IssueCard, SummaryCard } from '../../components/issues/issues';
+import { IssueToast } from '../../components/issues/IssueToast';
 import { getMaintenanceRequest, listMaintenanceRequests, updateMaintenanceRequest, type MaintenanceApiDTO } from '../../services/maintenanceService';
 
 function mapIssue(item: MaintenanceApiDTO): Issue {
@@ -28,7 +29,12 @@ export default function IssuePage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ id: number; message: string; variant: 'success' | 'error' } | null>(null);
+  const toastId = useRef(0);
+  const showToast = useCallback((message: string, variant: 'success' | 'error') => {
+    setToast({ id: ++toastId.current, message, variant });
+  }, []);
+  const dismissToast = useCallback(() => setToast(null), []);
 
   const loadIssues = useCallback(async () => {
     setLoading(true);
@@ -36,11 +42,13 @@ export default function IssuePage() {
       setIssues((await listMaintenanceRequests()).map(mapIssue));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được danh sách sự cố.');
+      const message = cause instanceof Error ? cause.message : 'Không tải được danh sách sự cố.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => { void loadIssues(); }, [loadIssues]);
 
@@ -58,7 +66,9 @@ export default function IssuePage() {
     try {
       setDetail(mapIssue(await getMaintenanceRequest(issue.id)));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được chi tiết sự cố.');
+      const message = cause instanceof Error ? cause.message : 'Không tải được chi tiết sự cố.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setDetailLoading(false);
     }
@@ -75,9 +85,11 @@ export default function IssuePage() {
       }));
       setIssues(current => current.map(issue => issue.id === updated.id ? updated : issue));
       setDetail(updated);
-      setNotice('Đã cập nhật sự cố.');
+      showToast('Đã cập nhật sự cố.', 'success');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không cập nhật được sự cố.');
+      const message = cause instanceof Error ? cause.message : 'Không cập nhật được sự cố.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setSaving(false);
     }
@@ -94,11 +106,10 @@ export default function IssuePage() {
         <button type="button" onClick={() => void loadIssues()} className="rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#1c2534]">Tải lại</button>
       </div>
 
-      {notice && <div role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}<button className="ml-3" onClick={() => setNotice(null)}>Đóng</button></div>}
-      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {toast && <IssueToast key={toast.id} message={toast.message} variant={toast.variant} onDismiss={dismissToast} />}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="TỔNG SỰ CỐ" value={counts.ALL} icon="/assets/d16ad.svg" iconBackground="bg-[#f1f5f9]" />
+        <SummaryCard label="TỔNG SỰ CỐ" value={counts.ALL} icon="report" iconBackground="bg-[#f1f5f9]" />
         <SummaryCard label="TIẾP NHẬN" value={counts.TIEP_NHAN} icon={STATUS_ICONS.TIEP_NHAN} iconBackground="bg-[#fff3e0]" />
         <SummaryCard label="ĐANG XỬ LÝ" value={counts.DANG_XU_LY} icon={STATUS_ICONS.DANG_XU_LY} iconBackground="bg-[#ebf3fe]" />
         <SummaryCard label="HOÀN THÀNH" value={counts.HOAN_THANH} icon={STATUS_ICONS.HOAN_THANH} iconBackground="bg-[#e6f4ea]" />
