@@ -31,10 +31,12 @@ Hệ thống Web Quản lý Phòng trọ nhằm tự động hóa quy trình qu�
 - `frontend/` — giao diện React/Vite và dịch vụ gọi REST API.
 - `backend/` — Express API `/api/v1`, cấu hình MySQL, middleware JWT và phân quyền.
 - `database/schema.sql` — 13 bảng dữ liệu theo từ điển trong DOCX.
+    + có thêm 2 bảng cập nhật trạng thái của auth
 
 ## Khởi chạy phát triển
 
 1. Tạo database bằng cách chạy `database/schema.sql` trên MySQL 8.0+.
+ - Thêm dữ liệu mẫu seed: Trong `backend/`, chạy `npm run seed` (chỉ dùng khi chưa có dữ liệu hoặc làm mới dữ liệu về 0)
 2. Sao chép `backend/.env.example` thành `backend/.env`, điền thông tin MySQL và JWT secret.
 3. Trong `backend/`, chạy `npm install`, rồi `npm run dev` (mặc định cổng 3000).
 4. Sao chép `frontend/.env.example` thành `frontend/.env`.
@@ -49,6 +51,7 @@ Hệ thống Web Quản lý Phòng trọ nhằm tự động hóa quy trình qu�
     `npm run dev`
 - 'backend':
     `npm install`
+    `npm run seed`(dùng khi reset dữ liệu)
     `npm run dev`
 - thư mục dự án:
     `npm install`

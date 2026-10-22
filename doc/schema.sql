@@ -37,6 +37,16 @@ CREATE TABLE tenants (
   CONSTRAINT fk_tenants_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE tenant_registration_requests (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL UNIQUE,
+  identity_card_number VARCHAR(20) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  tenant_id VARCHAR(36), reviewed_by VARCHAR(36),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, reviewed_at TIMESTAMP NULL,
+  CONSTRAINT fk_tenant_registration_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tenant_registration_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL,
+  CONSTRAINT fk_tenant_registration_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE contracts (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), contract_number VARCHAR(50) UNIQUE NOT NULL,
   room_id VARCHAR(36), representative_tenant_id VARCHAR(36), start_date DATE NOT NULL, end_date DATE NOT NULL,
@@ -91,4 +101,32 @@ CREATE TABLE notifications (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_notif_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Password reset OTP storage (approved option B; one active code per account)
+CREATE TABLE password_reset_otps (
+  user_id VARCHAR(36) PRIMARY KEY,
+  otp_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  attempt_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_password_reset_otps_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- migration
+CREATE TABLE IF NOT EXISTS tenant_registration_requests (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  user_id VARCHAR(36) NOT NULL UNIQUE,
+  identity_card_number VARCHAR(20) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  tenant_id VARCHAR(36) NULL,
+  reviewed_by VARCHAR(36) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP NULL,
+  CONSTRAINT fk_tenant_registration_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tenant_registration_tenant
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL,
+  CONSTRAINT fk_tenant_registration_reviewer
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

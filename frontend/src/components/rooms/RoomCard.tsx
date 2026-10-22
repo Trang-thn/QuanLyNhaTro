@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { Room, RoomMenuAction } from '../../types/rooms'
 import { amenities as allAmenities, formatVND } from '../../data/mockData'
+import { useAnchoredMenu } from './useAnchoredMenu'
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   DANG_THUE: { label: 'Đang thuê', bg: '#dbeafe', color: '#1d4ed8' },
@@ -91,7 +93,9 @@ interface Props {
 export function RoomCard({ room, onAction }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const menuPopupRef = useRef<HTMLDivElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const menuStyle = useAnchoredMenu(menuOpen, menuButtonRef, 240, 192, true)
 
   const statusCfg = room.status ? STATUS_CONFIG[room.status] ?? { label: room.status, bg: '#f3f4f6', color: '#6b7280' } : { label: 'Ch\u01b0a x\u00e1c \u0111\u1ecbnh', bg: '#f3f4f6', color: '#6b7280' }
 
@@ -105,7 +109,8 @@ export function RoomCard({ room, onAction }: Props) {
   useEffect(() => {
     if (!menuOpen) return
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (!menuRef.current?.contains(target) && !menuPopupRef.current?.contains(target)) {
         setMenuOpen(false)
       }
     }
@@ -190,8 +195,10 @@ export function RoomCard({ room, onAction }: Props) {
           </button>
 
           {menuOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-30 w-48 max-w-[calc(100vw-2rem)]"
+            createPortal(<div
+              ref={menuPopupRef}
+              style={{ ...menuStyle, maxWidth: 'calc(100vw - 2rem)' }}
+              className="rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
               onClick={e => e.stopPropagation()}
             >
               {MENU_ITEMS.map(item => (
@@ -212,7 +219,7 @@ export function RoomCard({ room, onAction }: Props) {
               >
                 Xóa phòng
               </button>
-            </div>
+            </div>, document.body)
           )}
         </div>
       </div>

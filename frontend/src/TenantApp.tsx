@@ -9,7 +9,7 @@ import Maintenance from './pages/issues/TenantIncidentsPage'
 import Notifications from './pages/notifications/TenantNotificationsPage'
 import Settings from './pages/Settings'
 
-type TenantPage = 'dashboard' | 'profile' | 'contracts' | 'invoices' | 'incidents' | 'settings'
+type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'contracts' | 'invoices'
 
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
@@ -59,10 +59,10 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
 const pageTitles: Record<TenantPage, string> = {
   dashboard: 'Tổng quan',
   profile: 'Hồ sơ & Phòng ở',
+  settings: 'Cài đặt tài khoản',
+  incidents: 'Báo cáo sự cố',
   contracts: 'Hợp đồng của tôi',
   invoices: 'Hóa đơn & Thanh toán',
-  incidents: 'Báo cáo sự cố',
-  settings: 'Cài đặt tài khoản',
 }
 
 interface Props { onLogout: () => void }
@@ -178,13 +178,14 @@ export default function TenantApp({ onLogout }: Props) {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          {currentPage === 'dashboard' && <TenantDashboard linked={true} />}
-          {currentPage === 'profile'   && <TenantProfile />}
+          {currentPage === 'dashboard' && <TenantDashboard />}
+          {currentPage === 'profile' && <TenantProfile />}
           {/* Restore these branches with the tenant-owned page modules. */}
           {/* {currentPage === 'contracts' && <TenantContracts />}
           {currentPage === 'invoices'  && <Invoices />} */}
           {currentPage === 'incidents' && <Maintenance />}
-          {currentPage === 'settings'  && <Settings />}
+          {currentPage === 'settings' && <Settings role="tenant" />}
+
         </main>
       </div>
 

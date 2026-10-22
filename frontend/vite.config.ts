@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
+      port: parseInt(process.env.PORT || '5173'),
       strictPort: true,
       watch: {
         ignored: ['**/.figma/**'],
@@ -39,12 +39,12 @@ export default defineConfig(({ mode }) => {
       // Proxy chuyển tiếp API call sang Backend từ File 1
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         },
         '/health': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         },
@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
+      port: parseInt(process.env.PORT || '5173'),
     },
   }
 })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Rooms from './pages/rooms/RoomPage'
@@ -9,12 +9,13 @@ import Rooms from './pages/rooms/RoomPage'
 // import Invoices from './pages/Invoices'
 import Maintenance from './pages/issues/IssuesPage'
 import Notifications from './pages/notifications/NotificationPage'
-import Settings from './pages/Settings'
 // import Utilities from './pages/Utilities'
+import Settings from './pages/Settings'
+import TenantRegistrationQueue from './pages/TenantRegistrationQueue'
 import TenantApp from './TenantApp'
-import { notifications as allNotifications } from './data/mockData'
+import { apiRequest, clearAuthToken, getAuthToken } from './services/api'
 
-type Page = 'dashboard' | 'rooms' | 'tenants' | 'contracts' | 'invoices' | 'utilities' | 'maintenance' | 'notifications' | 'settings'
+type Page = 'dashboard' | 'settings' | 'tenant-registrations' | 'rooms' | 'maintenance' | 'notifications'
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
@@ -79,18 +80,21 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>,
   },
+  {
+    id: 'tenant-registrations', label: 'Yêu cầu Tenant',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m6-10a4 4 0 100-8 4 4 0 000 8zm7-1h6m-3-3v6" />
+    </svg>,
+  },
 ]
 
 const pageTitles: Record<Page, string> = {
   dashboard: 'Tổng quan',
-  rooms: 'Phòng trọ',
-  tenants: 'Khách thuê',
-  contracts: 'Hợp đồng',
-  invoices: 'Hóa đơn & Thanh toán',
-  utilities: 'Điện nước',
-  maintenance: 'Sự cố & Bảo trì',
-  notifications: 'Thông báo',
   settings: 'Cài đặt',
+  'tenant-registrations': 'Yêu cầu đăng ký Tenant',
+  rooms: 'Phòng',
+  maintenance: 'Sự cố',
+  notifications: 'Thông báo',
 }
 
 function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
@@ -226,7 +230,6 @@ function Sidebar({ currentPage, onNavigate, onLogoutClick, collapsed, onToggle }
   collapsed: boolean
   onToggle: () => void
 }) {
-  const unreadCount = allNotifications.filter(n => !n.is_read).length
 
   return (
     <div
@@ -274,7 +277,6 @@ function Sidebar({ currentPage, onNavigate, onLogoutClick, collapsed, onToggle }
       <nav className="flex-1 py-3 overflow-y-auto">
         {navItems.map(item => {
           const isActive = currentPage === item.id
-          const isNotif = item.id === 'notifications'
           return (
             <button
               key={item.id}
@@ -294,11 +296,6 @@ function Sidebar({ currentPage, onNavigate, onLogoutClick, collapsed, onToggle }
               </span>
               {!collapsed && (
                 <span className="text-sm font-medium leading-tight flex-1">{item.label}</span>
-              )}
-              {isNotif && unreadCount > 0 && (
-                <span className={`flex items-center justify-center text-white text-xs font-bold rounded-full bg-red-500 ${collapsed ? 'absolute top-1.5 right-1.5 w-4 h-4 text-[9px]' : 'w-5 h-5'}`}>
-                  {unreadCount}
-                </span>
               )}
             </button>
           )
@@ -336,20 +333,46 @@ function Sidebar({ currentPage, onNavigate, onLogoutClick, collapsed, onToggle }
 
 export default function App() {
   const [role, setRole] = useState<'admin' | 'tenant' | null>(null)
+  const [restoringSession, setRestoringSession] = useState(true)
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const token = getAuthToken()
+    if (!token) {
+      setRestoringSession(false)
+      return () => { active = false }
+    }
+
+    apiRequest<{ user: { role: 'ADMIN' | 'TENANT' } }>('/users/me')
+      .then((profile) => {
+        if (active) setRole(profile.user.role === 'ADMIN' ? 'admin' : 'tenant')
+      })
+      .catch(() => {
+        if (active) {
+          clearAuthToken()
+          setRole(null)
+        }
+      })
+      .finally(() => { if (active) setRestoringSession(false) })
+
+    return () => { active = false }
+  }, [])
+
+  if (restoringSession) {
+    return <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">Đang khôi phục phiên đăng nhập...</div>
+  }
 
   if (!role) {
     return <Login onLogin={(r) => { setRole(r); setCurrentPage('dashboard') }} />
   }
 
   if (role === 'tenant') {
-    return <TenantApp onLogout={() => setRole(null)} />
+    return <TenantApp onLogout={() => { clearAuthToken(); setRole(null) }} />
   }
-
-  const unreadCount = allNotifications.filter(n => !n.is_read).length
   const pageTitle = pageTitles[currentPage]
 
   return (
@@ -381,20 +404,6 @@ export default function App() {
               </svg>
               Xuất báo cáo
             </button>
-            {/* Notification bell */}
-            <button
-              onClick={() => setCurrentPage('notifications')}
-              className="relative p-2 rounded-lg hover:bg-gray-100 transition"
-              title="Thông báo">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center" style={{ background: '#e53e3e' }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
             {/* User avatar */}
             <div className="flex items-center gap-2 pl-3 border-l border-gray-200 cursor-pointer" onClick={() => setCurrentPage('settings')}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: AMBER }}>A</div>
@@ -408,23 +417,24 @@ export default function App() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-6">
-          {currentPage === 'dashboard'      && <Dashboard />}
-          {currentPage === 'rooms'          && <Rooms />}
+          {currentPage === 'dashboard' && <Dashboard />}
+          {currentPage === 'rooms' && <Rooms />}
           {/* Restore tenant/contract/invoice/utilities render branches with their owner modules. */}
           {/* {currentPage === 'tenants'        && <Tenants />}
           {currentPage === 'contracts'      && <Contracts />}
           {currentPage === 'invoices'       && <Invoices />}
           {currentPage === 'utilities'      && <Utilities />} */}
-          {currentPage === 'maintenance'    && <Maintenance />}
-          {currentPage === 'notifications'  && <Notifications />}
-          {currentPage === 'settings'       && <Settings />}
+          {currentPage === 'maintenance' && <Maintenance />}
+          {currentPage === 'notifications' && <Notifications />}
+          {currentPage === 'settings' && <Settings role="admin" />}
+          {currentPage === 'tenant-registrations' && <TenantRegistrationQueue />}
         </main>
       </div>
 
       {/* Logout confirmation modal */}
       {showLogoutModal && (
         <LogoutModal
-          onConfirm={() => { setRole(null); setShowLogoutModal(false) }}
+          onConfirm={() => { clearAuthToken(); setRole(null); setShowLogoutModal(false) }}
           onCancel={() => setShowLogoutModal(false)}
         />
       )}

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { Amenity } from '../../types/rooms'
 import type { Room } from '../../types/rooms'
+import { useAnchoredMenu } from './useAnchoredMenu'
 
 const AMBER = '#f59e0b'
 
@@ -8,18 +10,23 @@ const AMBER = '#f59e0b'
 
 interface RowMenuProps {
   amenity: Amenity
+  roomCount: number | null
   onEdit: (a: Amenity) => void
   onDelete: (a: Amenity) => void
 }
 
-function RowMenu({ amenity, onEdit, onDelete }: RowMenuProps) {
+function RowMenu({ amenity, roomCount, onEdit, onDelete }: RowMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuStyle = useAnchoredMenu(open, triggerRef, 120, 144, true)
 
   useEffect(() => {
     if (!open) return
     const down = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
     }
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', down)
@@ -33,7 +40,11 @@ function RowMenu({ amenity, onEdit, onDelete }: RowMenuProps) {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        aria-haspopup="true"
         className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
         aria-label="Thao tác"
       >
@@ -45,8 +56,10 @@ function RowMenu({ amenity, onEdit, onDelete }: RowMenuProps) {
       </button>
 
       {open && (
-        <div
-          className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-30 w-36"
+        createPortal(<div
+          ref={menuRef}
+          style={menuStyle}
+          className="rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
           onClick={e => e.stopPropagation()}
         >
           <button
@@ -57,12 +70,19 @@ function RowMenu({ amenity, onEdit, onDelete }: RowMenuProps) {
           </button>
           <div className="my-1 border-t border-gray-100" />
           <button
+            type="button"
+            disabled={roomCount !== 0}
+            title={roomCount === null
+              ? 'Chưa xác định được số phòng sử dụng tiện nghi này'
+              : roomCount > 0
+                ? `Có ${roomCount} phòng đang sử dụng tiện nghi này`
+                : 'Xóa tiện nghi'}
             onClick={() => { setOpen(false); onDelete(amenity) }}
-            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white"
           >
             Xóa
           </button>
-        </div>
+        </div>, document.body)
       )}
     </div>
   )
@@ -88,7 +108,9 @@ export function AmenityList({ amenities, rooms, loading = false, error, onAdd, o
   )
 
   function roomCount(amenityId: string) {
-    if (rooms.some(room => room.amenity_ids === undefined)) return null
+    const amenity = amenities.find(item => item.id === amenityId)
+    if (typeof amenity?.room_count === 'number') return amenity.room_count
+    if (rooms.length === 0 || rooms.some(room => room.amenity_ids === undefined)) return null
     return rooms.filter(room => (room.amenity_ids ?? []).includes(amenityId)).length
   }
 
@@ -97,7 +119,7 @@ export function AmenityList({ amenities, rooms, loading = false, error, onAdd, o
       {loading && <div role="status" className="rounded-lg bg-white px-4 py-3 text-sm text-gray-500">Đang tải tiện nghi...</div>}
       {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Không tải được tiện nghi: {error}</div>}
       {/* Search bar + Add button */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 hover:border-gray-300 transition">
           <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -105,6 +127,7 @@ export function AmenityList({ amenities, rooms, loading = false, error, onAdd, o
           <input
             type="text"
             placeholder="Tìm kiếm tiện nghi..."
+            aria-label="Tìm kiếm tiện nghi"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="flex-1 text-sm text-gray-700 outline-none bg-transparent placeholder:text-gray-400"
@@ -119,7 +142,7 @@ export function AmenityList({ amenities, rooms, loading = false, error, onAdd, o
         </div>
         <button
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm transition hover:brightness-95 active:scale-95 shrink-0"
+          className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm transition hover:brightness-95 active:scale-95 sm:w-auto sm:shrink-0"
           style={{ background: AMBER }}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,37 +176,44 @@ export function AmenityList({ amenities, rooms, loading = false, error, onAdd, o
           </button>
         </div>
       ) : amenities.length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[1fr_2fr_140px_56px] px-5 py-3 border-b border-gray-100 bg-gray-50">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tên tiện nghi</span>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mô tả</span>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Số phòng sử dụng</span>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Thao tác</span>
-          </div>
-
-          {/* Rows */}
-          {filtered.length === 0 ? (
-            <div className="py-10 text-center text-sm text-gray-400">
-              Không tìm thấy tiện nghi nào
+        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+          <div className="min-w-[520px]">
+            {/* Table header */}
+            <div className="grid grid-cols-[1fr_140px_56px] border-b border-gray-100 bg-gray-50 px-5 py-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tên tiện nghi</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Số phòng sử dụng</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Thao tác</span>
             </div>
-          ) : (
-            filtered.map((a, idx) => (
-              <div
-                key={a.id}
-                className={`grid grid-cols-[1fr_2fr_140px_56px] items-center px-5 py-4 hover:bg-gray-50 transition-colors ${idx !== filtered.length - 1 ? 'border-b border-gray-100' : ''}`}
-              >
-                <span className="text-sm font-semibold text-gray-800">{a.name}</span>
-                <span className="text-sm text-gray-500 truncate pr-4">{a.description ?? '—'}</span>
-                <span className="text-sm text-gray-500">
-                  {roomCount(a.id) === null ? '—' : `${roomCount(a.id)} phòng`}
-                </span>
-                <div className="flex justify-end">
-                  <RowMenu amenity={a} onEdit={onEdit} onDelete={onDelete} />
+
+            {/* Rows */}
+            <div className="max-h-[45vh] overflow-y-auto overscroll-contain">
+              {filtered.length === 0 ? (
+                <div className="py-10 text-center text-sm text-gray-400">
+                  Không tìm thấy tiện nghi nào
                 </div>
-              </div>
-            ))
-          )}
+              ) : (
+                filtered.map((a, idx) => {
+                  const count = roomCount(a.id)
+                  return (
+                    <div
+                      key={a.id}
+                      className={`grid grid-cols-[1fr_140px_56px] items-center px-5 py-4 hover:bg-gray-50 transition-colors ${idx !== filtered.length - 1 ? 'border-b border-gray-100' : ''}`}
+                    >
+                      <span className="text-sm font-semibold text-gray-800">{a.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {count === null ? '-' : `${count} phòng`}
+                      </span>
+                      <div className="flex justify-end">
+                        <RowMenu amenity={a} roomCount={count} onEdit={onEdit} onDelete={onDelete} />
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+          </div>
         </div>
       ) : null}
     </div>

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { RoomTypeApiDTO } from '../../types/rooms'
+import { useAnchoredMenu } from './useAnchoredMenu'
 
 const NAVY = '#0d2137'
 
@@ -16,13 +18,17 @@ interface Props {
 export function RoomTypeDropdown({ value, onChange, error, showArea = false, roomTypes, loading = false, loadError }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuStyle = useAnchoredMenu(open, triggerRef, 320)
 
   const selected = roomTypes.find(t => t.id === value)
 
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -38,6 +44,7 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false, roo
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => { if (!loading && !loadError && roomTypes.length > 0) setOpen(v => !v) }}
         disabled={loading || !!loadError || roomTypes.length === 0}
@@ -66,7 +73,7 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false, roo
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-40">
+        createPortal(<div ref={menuRef} style={menuStyle} className="overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
           {roomTypes.map(t => {
             const isSelected = t.id === value
             return (
@@ -96,7 +103,7 @@ export function RoomTypeDropdown({ value, onChange, error, showArea = false, roo
               </button>
             )
           })}
-        </div>
+        </div>, document.body)
       )}
 
       {loadError && <p role="alert" className="mt-1 text-xs text-red-500">{loadError}</p>}

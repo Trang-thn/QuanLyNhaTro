@@ -10,7 +10,13 @@ export class AmenityServiceError extends Error {
 }
 
 export async function listAmenities(): Promise<AmenityRecord[]> {
-  const [rows] = await pool.query<AmenityRecord[]>('SELECT id, name FROM amenities ORDER BY name');
+  const [rows] = await pool.query<AmenityRecord[]>(
+    `SELECT a.id, a.name, COUNT(DISTINCT ra.room_id) AS room_count
+     FROM amenities a
+     LEFT JOIN room_amenities ra ON ra.amenity_id = a.id
+     GROUP BY a.id, a.name
+     ORDER BY a.name`,
+  );
   return rows;
 }
 

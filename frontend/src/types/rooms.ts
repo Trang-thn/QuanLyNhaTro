@@ -91,6 +91,7 @@ export interface Amenity {
   id: string
   name: string
   description?: string
+  room_count?: number
 }
 export interface TypeDraft {
   name: string

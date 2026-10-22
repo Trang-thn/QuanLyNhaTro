@@ -1,4 +1,5 @@
 ﻿import { ApiRequestError, apiRequest } from './api';
+import { getAuthToken } from './api';
 import type {
   CreateRoomRequest,
   CreateRoomTypeRequest,
@@ -31,8 +32,12 @@ export class RoomApiError extends Error {
   }
 }
 
-async function roomRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!roomTokenProvider) {
+async function requestWithToken<T>(
+  path: string,
+  init: RequestInit | undefined,
+  tokenProvider: RoomTokenProvider | null,
+): Promise<T> {
+  if (!tokenProvider) {
     throw new RoomApiError(
       'Chưa kết nối nguồn token đăng nhập chung. API phòng chưa được gọi.',
       null,
@@ -42,7 +47,7 @@ async function roomRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   let token: string | null;
   try {
-    token = await roomTokenProvider();
+    token = await tokenProvider();
   } catch {
     throw new RoomApiError('Không lấy được token từ hệ thống đăng nhập.', null, 'AUTH_NOT_CONFIGURED');
   }
@@ -63,32 +68,40 @@ async function roomRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
+async function roomRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  return requestWithToken(path, init, roomTokenProvider ?? getAuthToken);
+}
+
 /** Use the shared token source for other authenticated feature services. */
 export function authenticatedApiRequest<T>(path: string, init?: RequestInit) {
-  return roomRequest<T>(path, init);
+  return requestWithToken<T>(path, init, roomTokenProvider);
 }
 
 function toRoomErrorMessage(error: ApiRequestError) {
-  if (error.status === 400) return error.message || 'Dữ liệu phòng không hợp lệ.';
+  const message = error.message.toLowerCase();
+  if (error.status === 400) return 'Dữ liệu gửi lên chưa hợp lệ. Vui lòng kiểm tra lại thông tin.';
   if (error.status === 401) return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Hãy đăng nhập lại.';
   if (error.status === 403) return 'Tài khoản hiện tại không có quyền thực hiện thao tác này.';
-  if (error.status === 404) return error.message.toLowerCase().includes('amenity')
-    ? 'Không tìm thấy tiện nghi hoặc phòng được yêu cầu.'
-    : 'Không tìm thấy phòng được yêu cầu.';
-  if (error.status === 409 && error.message.toLowerCase().includes('amenity name')) {
+  if (error.status === 404) {
+    if (message.includes('amenity')) return 'Không tìm thấy tiện nghi được yêu cầu.';
+    if (message.includes('room type')) return 'Không tìm thấy loại phòng được yêu cầu.';
+    return 'Không tìm thấy phòng được yêu cầu.';
+  }
+  if (error.status === 409 && message.includes('amenity name')) {
     return 'Tên tiện nghi đã tồn tại.';
   }
-  if (error.status === 409 && error.message.includes('Room type is assigned')) {
+  if (error.status === 409 && message.includes('room type is assigned')) {
     return 'Không thể xóa loại phòng đang được phòng sử dụng.';
   }
-  if (error.status === 409 && error.message.includes('related')) {
+  if (error.status === 409 && message.includes('related')) {
     return 'Không thể xóa phòng vì phòng còn dữ liệu liên quan.';
   }
-  if (error.status === 409 && error.message.includes('active contract')) {
+  if (error.status === 409 && message.includes('active contract')) {
     return 'Phòng đang có hợp đồng còn hiệu lực nên không thể đổi trạng thái thủ công.';
   }
   if (error.status === 409) return 'Số phòng đã tồn tại hoặc dữ liệu đang xung đột.';
-  return error.message || 'Máy chủ không thể xử lý yêu cầu.';
+  if (error.status >= 500) return 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
+  return 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.';
 }
 
 export async function listRooms(filters: RoomListFilters = {}) {

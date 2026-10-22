@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { useAnchoredMenu } from './useAnchoredMenu'
 
 interface Option {
   value: string
@@ -15,13 +17,16 @@ export function FilterDropdown({ value, onChange, options }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuStyle = useAnchoredMenu(open, triggerRef, 256)
 
   const selected = options.find(o => o.value === value) ?? options[0]
 
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -60,7 +65,7 @@ export function FilterDropdown({ value, onChange, options }: Props) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-30 min-w-full max-h-64 overflow-y-auto">
+        createPortal(<div ref={menuRef} style={menuStyle} className="overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
           {options.map(opt => (
             <button
               key={opt.value}
@@ -75,7 +80,7 @@ export function FilterDropdown({ value, onChange, options }: Props) {
               {opt.label}
             </button>
           ))}
-        </div>
+        </div>, document.body)
       )}
     </div>
   )

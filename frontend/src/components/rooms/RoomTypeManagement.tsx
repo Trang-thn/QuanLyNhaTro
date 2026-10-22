@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { Room, RoomTypeApiDTO, CreateRoomTypeRequest, UpdateRoomTypeRequest, TypeDraft } from '../../types/rooms'
+import { useAnchoredMenu } from './useAnchoredMenu'
 
 interface Props {
   roomTypes: RoomTypeApiDTO[]
@@ -13,6 +15,81 @@ interface Props {
 
 
 const emptyDraft: TypeDraft = { name: '', base_price: '', area_sqm: '', description: '' }
+
+interface RowMenuProps {
+  type: RoomTypeApiDTO
+  deleteDisabled: boolean
+  deleteTitle: string
+  onEdit: (type: RoomTypeApiDTO) => void
+  onDelete: (type: RoomTypeApiDTO) => void
+}
+
+function RowMenu({ type, deleteDisabled, deleteTitle, onEdit, onDelete }: RowMenuProps) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuStyle = useAnchoredMenu(open, triggerRef, 120, 144, true)
+
+  useEffect(() => {
+    if (!open) return
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div ref={rootRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(current => !current)}
+        aria-label={`Thao tác loại phòng ${type.name}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      >
+        <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
+      {open && createPortal(
+        <div ref={menuRef} style={menuStyle} className="rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => { setOpen(false); onEdit(type) }}
+            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 transition hover:bg-gray-50"
+          >
+            Sửa
+          </button>
+          <div className="my-1 border-t border-gray-100" />
+          <button
+            type="button"
+            disabled={deleteDisabled}
+            title={deleteTitle}
+            onClick={() => { setOpen(false); onDelete(type) }}
+            className="w-full px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white"
+          >
+            Xóa
+          </button>
+        </div>,
+        document.body,
+      )}
+    </div>
+  )
+}
 
 export function RoomTypeManagement({ roomTypes, rooms, loading, error, onCreate, onUpdate, onDelete }: Props) {
   const [search, setSearch] = useState('')
@@ -64,45 +141,57 @@ export function RoomTypeManagement({ roomTypes, rooms, loading, error, onCreate,
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5">
-          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm loại phòng..." className="w-full text-sm outline-none" />
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input aria-label="Tìm loại phòng" value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm loại phòng..." className="w-full min-w-0 bg-transparent text-sm outline-none" />
         </div>
-        <button type="button" onClick={openCreate} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white" style={{ background: '#f59e0b' }}>
+        <button type="button" onClick={openCreate} className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:w-auto" style={{ background: '#f59e0b' }}>
           Thêm loại phòng
         </button>
       </div>
 
-      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-      {loading ? (
-        <div role="status" className="rounded-xl bg-white py-12 text-center text-sm text-gray-500">Đang tải loại phòng...</div>
-      ) : roomTypes.length === 0 ? (
-        <div className="rounded-xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-500">Chưa có loại phòng. Hãy thêm loại đầu tiên hoặc tạo ngay trong form thêm phòng.</div>
-      ) : filteredTypes.length === 0 ? (
-        <div className="rounded-xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-500">Không tìm thấy loại phòng phù hợp.</div>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-          <div className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_150px] gap-3 border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase text-gray-500">
+      {error && <div role="alert" className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {loading ? (
+          <div role="status" className="rounded-xl bg-white py-12 text-center text-sm text-gray-500">Đang tải loại phòng...</div>
+        ) : roomTypes.length === 0 ? (
+          <div className="rounded-xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-500">Chưa có loại phòng. Hãy thêm loại đầu tiên hoặc tạo ngay trong form thêm phòng.</div>
+        ) : filteredTypes.length === 0 ? (
+          <div className="rounded-xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-500">Không tìm thấy loại phòng phù hợp.</div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="min-w-[760px]">
+          <div className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <span>Tên loại phòng</span><span>Giá cơ bản</span><span>Diện tích</span><span>Mô tả</span><span className="text-right">Thao tác</span>
           </div>
           {filteredTypes.map(type => {
             const usageCount = rooms.filter(room => room.room_type_id === type.id).length
             return (
-              <div key={type.id} className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_150px] items-center gap-3 border-b px-5 py-4 text-sm last:border-b-0">
+              <div key={type.id} className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] items-center gap-3 border-b border-gray-100 px-5 py-4 text-sm last:border-b-0">
                 <span className="font-medium text-gray-800">{type.name}</span>
                 <span className="text-gray-600">{formatPrice(type.base_price)}</span>
                 <span className="text-gray-600">{type.area_sqm == null ? 'Chưa khai báo' : `${type.area_sqm} m²`}</span>
                 <span className="truncate text-gray-500">{type.description || '—'}</span>
-                <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => openEdit(type)} className="text-sm font-medium text-blue-700">Sửa</button>
-                  <button type="button" disabled={saving || usageCount > 0} title={usageCount > 0 ? `Đang được ${usageCount} phòng sử dụng` : 'Xóa loại phòng'} onClick={() => void handleDelete(type)} className="text-sm font-medium text-red-600 disabled:cursor-not-allowed disabled:text-gray-300">Xóa</button>
+                <div className="flex justify-end">
+                  <RowMenu
+                    type={type}
+                    deleteDisabled={saving || usageCount > 0}
+                    deleteTitle={usageCount > 0 ? `Đang được ${usageCount} phòng sử dụng` : 'Xóa loại phòng'}
+                    onEdit={openEdit}
+                    onDelete={candidate => void handleDelete(candidate)}
+                  />
                 </div>
               </div>
             )
           })}
-        </div>
-      )}
+          </div>
+          </div>
+        )}
+      </div>
 
       {editing !== undefined && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) setEditing(undefined) }}>
