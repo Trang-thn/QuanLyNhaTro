@@ -97,10 +97,23 @@ CREATE TABLE maintenance_requests (
 
 CREATE TABLE notifications (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title VARCHAR(200) NOT NULL, content TEXT NOT NULL,
-  sender_id VARCHAR(36), receiver_id VARCHAR(36), is_read BOOLEAN DEFAULT FALSE,
+  sender_id VARCHAR(36), receiver_id VARCHAR(36),
+  audience_type ENUM('ALL', 'ROOM', 'TENANT') NOT NULL DEFAULT 'TENANT', room_id VARCHAR(36),
+  is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_notif_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notif_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+  INDEX idx_notifications_sender_created (sender_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE notification_recipients (
+  notification_id VARCHAR(36) NOT NULL, user_id VARCHAR(36) NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (notification_id, user_id),
+  INDEX idx_notification_recipients_user_created (user_id, created_at),
+  CONSTRAINT fk_notification_recipients_notification FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notification_recipients_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Password reset OTP storage (approved option B; one active code per account)
