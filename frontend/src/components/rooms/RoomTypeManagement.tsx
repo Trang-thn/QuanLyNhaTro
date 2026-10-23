@@ -164,31 +164,31 @@ export function RoomTypeManagement({ roomTypes, rooms, loading, error, onCreate,
           <div className="rounded-xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-500">Không tìm thấy loại phòng phù hợp.</div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
-          <div className="min-w-[760px]">
-          <div className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            <span>Tên loại phòng</span><span>Giá cơ bản</span><span>Diện tích</span><span>Mô tả</span><span className="text-right">Thao tác</span>
-          </div>
-          {filteredTypes.map(type => {
-            const usageCount = rooms.filter(room => room.room_type_id === type.id).length
-            return (
-              <div key={type.id} className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] items-center gap-3 border-b border-gray-100 px-5 py-4 text-sm last:border-b-0">
-                <span className="font-medium text-gray-800">{type.name}</span>
-                <span className="text-gray-600">{formatPrice(type.base_price)}</span>
-                <span className="text-gray-600">{type.area_sqm == null ? 'Chưa khai báo' : `${type.area_sqm} m²`}</span>
-                <span className="truncate text-gray-500">{type.description || '—'}</span>
-                <div className="flex justify-end">
-                  <RowMenu
-                    type={type}
-                    deleteDisabled={saving || usageCount > 0}
-                    deleteTitle={usageCount > 0 ? `Đang được ${usageCount} phòng sử dụng` : 'Xóa loại phòng'}
-                    onEdit={openEdit}
-                    onDelete={candidate => void handleDelete(candidate)}
-                  />
-                </div>
+            <div className="min-w-[760px]">
+              <div className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 ">
+                <span>Tên loại phòng</span><span>Giá cơ bản</span><span>Diện tích</span><span>Mô tả</span><span className="text-right">Thao tác</span>
               </div>
-            )
-          })}
-          </div>
+              {filteredTypes.map(type => {
+                const usageCount = rooms.filter(room => room.room_type_id === type.id).length
+                return (
+                  <div key={type.id} className="grid grid-cols-[1.2fr_1fr_0.8fr_1.5fr_64px] items-center gap-3 border-b border-gray-100 px-5 py-4 text-sm last:border-b-0">
+                    <span className="font-medium text-gray-800">{type.name}</span>
+                    <span className="text-gray-600">{formatPrice(type.base_price)}</span>
+                    <span className="text-gray-600">{type.area_sqm == null ? 'Chưa khai báo' : `${type.area_sqm} m²`}</span>
+                    <span className="truncate text-gray-500">{type.description || '—'}</span>
+                    <div className="flex justify-end">
+                      <RowMenu
+                        type={type}
+                        deleteDisabled={saving || usageCount > 0}
+                        deleteTitle={usageCount > 0 ? `Đang được ${usageCount} phòng sử dụng` : 'Xóa loại phòng'}
+                        onEdit={openEdit}
+                        onDelete={candidate => void handleDelete(candidate)}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

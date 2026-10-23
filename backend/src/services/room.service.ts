@@ -188,7 +188,22 @@ export async function deleteRoom(id: string) {
     await connection.beginTransaction();
     const [rooms] = await connection.query<RoomRecord[]>('SELECT id FROM rooms WHERE id = ? FOR UPDATE', [id]);
     if (!rooms[0]) throw new RoomServiceError(404, 'Room not found');
-    const relatedTables = ['contracts', 'utility_readings', 'maintenance_requests', 'room_amenities'];
+
+    const [activeContracts] = await connection.query<IdRow[]>(
+      `SELECT id FROM contracts
+       WHERE room_id = ? AND status = 'HIEU_LUC'
+         AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE
+       LIMIT 1 FOR UPDATE`,
+      [id],
+    );
+    if (activeContracts[0]) {
+      throw new RoomServiceError(409, 'Room has an active contract and cannot be deleted');
+    }
+
+    // Room amenity assignments are dependent join rows and the schema already
+    // removes them with ON DELETE CASCADE. Historical/business records remain
+    // protected so deleting a room cannot erase contracts, readings, or issues.
+    const relatedTables = ['contracts', 'utility_readings', 'maintenance_requests'];
     for (const table of relatedTables) {
       const [rows] = await connection.query<CountQueryRow[]>(`SELECT COUNT(*) AS total FROM ${table} WHERE room_id = ?`, [id]);
       if (Number(rows[0].total) > 0) throw new RoomServiceError(409, `Room cannot be deleted because related ${table} records exist`);

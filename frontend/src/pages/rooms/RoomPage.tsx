@@ -10,7 +10,7 @@ import { RoomAddModal } from '../../components/rooms/RoomAddModal'
 import { RoomEditModal } from '../../components/rooms/RoomEditModal'
 import { RoomDetailModal } from '../../components/rooms/RoomDetailModal'
 import { RoomStatusModal } from '../../components/rooms/RoomStatusModal'
-import { RoomDeleteModal, RoomDeleteWarningModal } from '../../components/rooms/RoomDeleteModal'
+import { RoomDeleteWarningModal } from '../../components/rooms/RoomDeleteModal'
 import { AmenityAddModal } from '../../components/rooms/AmenityAddModal'
 import { AmenityEditModal } from '../../components/rooms/AmenityEditModal'
 import { AmenityDeleteModal, AmenityDeleteWarningModal } from '../../components/rooms/AmenityDeleteModal'
@@ -517,22 +517,8 @@ export default function RoomPage() {
           </div>
         </div>
       )}
-      {notice?.type === 'error' && (
-        <button type="button" onClick={retryLoading} className="fixed top-16 right-4 z-[60] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow">
-          Tải lại dữ liệu
-        </button>
-      )}
       {detailLoading && <div role="status" className="fixed top-4 left-1/2 z-[60] rounded-lg bg-white px-4 py-2 text-sm shadow">Đang tải chi tiết phòng…</div>}
       <header className="flex shrink-0 flex-col gap-5">
-        {/* <div className="flex flex-col gap-1">
-          <nav className="flex items-center gap-1.5 text-xs font-medium text-gray-500" aria-label="Breadcrumb">
-            <span>Tổng quan</span>
-            <span aria-hidden="true" className="text-gray-300">/</span>
-            <span style={{ color: NAVY }}>Phòng trọ</span>
-          </nav>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: NAVY }}>Quản lý phòng trọ</h1>
-          <p className="text-sm text-gray-500">Theo dõi phòng, tiện nghi và loại phòng trong nhà trọ.</p>
-        </div>
 
         {/* Tab bar + action button */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -791,13 +777,6 @@ export default function RoomPage() {
         />
       )}
       {modal.kind === 'delete' && (
-        <RoomDeleteModal
-          room={modal.room}
-          onClose={closeModal}
-          onProceed={() => setModal({ kind: 'delete_warning', room: modal.room })}
-        />
-      )}
-      {modal.kind === 'delete_warning' && (
         <RoomDeleteWarningModal
           room={modal.room}
           onClose={closeModal}

@@ -64,6 +64,9 @@ async function requestWithToken<T>(
     if (error instanceof ApiRequestError) {
       throw new RoomApiError(toRoomErrorMessage(error), error.status, 'HTTP_ERROR');
     }
+    if (error instanceof Error && error.message.toLowerCase().includes('room has an active contract')) {
+      throw new RoomApiError('Phòng đang có người thuê, không thể xóa.', 409, 'HTTP_ERROR');
+    }
     throw new RoomApiError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.', null, 'NETWORK_ERROR');
   }
 }
