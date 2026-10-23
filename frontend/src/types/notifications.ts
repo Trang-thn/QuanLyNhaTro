@@ -20,8 +20,7 @@ export interface Item {
 export interface Draft {
     title: string;
     content: string;
-    target: 'all' | 'person';
-    scope: 'all' | 'room';
+    audience: 'ALL' | 'ROOM' | 'TENANT';
     person: string;
     room: string
 }
@@ -39,7 +38,8 @@ export interface DropDowns {
     value: string;
     placeholder: string;
     options: DropdownOption[];
-    onChange: (value: string) => void
+    onChange: (value: string) => void;
+    disabled?: boolean;
 }
 export interface DropdownOption { value: string; label: string }
 
@@ -47,18 +47,20 @@ export interface NotificationApiDTO {
     id: string
     title: string
     content: string
-    is_read: boolean | number
+    audience_type: 'ALL' | 'ROOM' | 'TENANT'
+    room_id?: string | null
+    is_read?: boolean | number
     created_at: string
-    receiver_id: string
+    receiver_id?: string | null
     receiver_name?: string | null
     sender_name?: string | null
     room_number?: string | null
+    recipient_count?: number
 }
 
 export interface NotificationRecipient {
     id: string
     name: string
-    rooms: { id: string; room_number: string }[]
 }
 
 export interface NotificationRoom {

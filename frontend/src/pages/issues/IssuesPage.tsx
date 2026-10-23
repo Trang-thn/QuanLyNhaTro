@@ -99,9 +99,7 @@ export default function IssuePage() {
     <section className="mx-auto flex w-full max-w-[1136px] flex-col gap-6 font-['Manrope:Regular']">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-[13px]">
-          <span className="font-['Manrope:Medium'] font-medium text-[#8c9bae]">Tổng quan</span>
-          <span className="text-[#8c9bae]">/</span>
-          <span className="font-['Manrope:Bold'] font-bold text-[#172b4d]">Quản Lý Sự Cố</span>
+          <span className="font-['Manrope:Bold'] font-bold text-[28px] text-[#172b4d]">Quản Lý Sự Cố</span>
         </div>
         <button type="button" onClick={() => void loadIssues()} className="rounded-lg border border-[#eadfc9] bg-white px-3 py-2 text-sm text-[#1c2534]">Tải lại</button>
       </div>
@@ -115,8 +113,8 @@ export default function IssuePage() {
         <SummaryCard label="HOÀN THÀNH" value={counts.HOAN_THANH} icon={STATUS_ICONS.HOAN_THANH} iconBackground="bg-[#e6f4ea]" />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#eadfc9] bg-white p-4">
-        <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#eadfc9] bg-white p-4 ">
+        <div className="flex flex-wrap gap-3 ">
           {([['ALL', 'Tất cả'], ['TIEP_NHAN', 'Tiếp nhận'], ['DANG_XU_LY', 'Đang xử lý'], ['HOAN_THANH', 'Hoàn thành']] as const).map(([value, label]) => {
             const active = filter === value;
             return <button key={value} type="button" onClick={() => setFilter(value)} className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] ${active ? 'border-[#172b4d] bg-[#172b4d] font-bold text-[#fff9f2]' : 'border-[#eadfc9] bg-white text-[#1c2534]'}`}>
@@ -124,22 +122,23 @@ export default function IssuePage() {
             </button>;
           })}
         </div>
-        <span className="text-[13px] text-[#4f5e74]">Sắp xếp: Mới nhất</span>
       </div>
 
-      {loading ? <div role="status" className="rounded-xl bg-white py-16 text-center text-sm text-[#4f5e74]">Đang tải danh sách sự cố...</div> : issues.length === 0 ? (
-        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[20px] border border-[#eadfc9] bg-white p-10 text-center">
-          <p className="font-bold text-lg text-[#1c2534]">Chưa có sự cố nào</p>
-          <p className="mt-2 text-sm text-[#4f5e74]">Các báo cáo của người thuê sẽ hiển thị tại đây.</p>
-        </div>
-      ) : filteredIssues.length ? (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {filteredIssues.map(issue => <IssueCard key={issue.id} issue={issue} onDetail={() => void openDetail(issue)} />)}
-        </div>
-      ) : <div className="rounded-[20px] border border-[#eadfc9] bg-white py-20 text-center text-sm text-[#4f5e74]">Không có sự cố ở trạng thái này.</div>}
+      {
+        loading ? <div role="status" className="rounded-xl bg-white py-16 text-center text-sm text-[#4f5e74]">Đang tải danh sách sự cố...</div> : issues.length === 0 ? (
+          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[20px] border border-[#eadfc9] bg-white p-10 text-center">
+            <p className="font-bold text-lg text-[#1c2534]">Chưa có sự cố nào</p>
+            <p className="mt-2 text-sm text-[#4f5e74]">Các báo cáo của người thuê sẽ hiển thị tại đây.</p>
+          </div>
+        ) : filteredIssues.length ? (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {filteredIssues.map(issue => <IssueCard key={issue.id} issue={issue} onDetail={() => void openDetail(issue)} />)}
+          </div>
+        ) : <div className="rounded-[20px] border border-[#eadfc9] bg-white py-20 text-center text-sm text-[#4f5e74]">Không có sự cố ở trạng thái này.</div>
+      }
 
       {detailLoading && <div role="status" className="fixed left-1/2 top-4 z-[60] rounded-lg bg-white px-4 py-2 text-sm shadow">Đang tải chi tiết...</div>}
       {detail && <DetailModal issue={detail} onClose={() => setDetail(null)} onSave={(status, cost) => void saveIssue(status, cost)} saving={saving} error={error} />}
-    </section>
+    </section >
   );
 }

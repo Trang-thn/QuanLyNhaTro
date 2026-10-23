@@ -1,27 +1,16 @@
-import { authenticatedApiRequest } from './roomService'
-import { RoomApiError } from './roomService'
+import { apiRequest } from './api'
 import type { NotificationApiDTO, NotificationRecipient, NotificationRoom } from '../types/notifications'
 
 export interface CreateNotificationRequest {
   title: string
   content: string
+  audience: 'ALL' | 'ROOM' | 'TENANT'
   receiver_id?: string
   room_id?: string
 }
 
 async function notificationRequest<T>(path: string, init?: RequestInit) {
-  try {
-    return await authenticatedApiRequest<T>(path, init)
-  } catch (error) {
-    if (error instanceof RoomApiError) {
-      if (error.code === 'AUTH_NOT_CONFIGURED') {
-        throw new Error('Chưa kết nối token đăng nhập chung; API Thông báo chưa được gọi.')
-      }
-      if (error.status === 400) throw new Error('Dữ liệu thông báo không hợp lệ.')
-      if (error.status === 404) throw new Error('Không tìm thấy thông báo hoặc đối tượng liên quan.')
-    }
-    throw error
-  }
+  return apiRequest<T>(path, init)
 }
 
 export async function listSentNotifications() {
@@ -34,10 +23,11 @@ export async function listInboxNotifications() {
   return response.data
 }
 
-export async function listNotificationRecipients() {
+export async function listNotificationRecipients(roomId?: string) {
+  const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : ''
   const response = await notificationRequest<{
     data: { users: NotificationRecipient[]; rooms: NotificationRoom[] }
-  }>('/notifications/recipients')
+  }>(`/notifications/recipients${query}`)
   return response.data
 }
 

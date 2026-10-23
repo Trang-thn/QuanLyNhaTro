@@ -3,11 +3,15 @@ import type { Item, Draft, NotificationApiDTO, NotificationRecipient, Notificati
 import { CreateModal, ConfirmModal, DetailModal } from "../../components/notifications/Notifications"
 import { createNotification, deleteAllSentNotifications, deleteNotification, listNotificationRecipients, listSentNotifications } from '../../services/notificationService'
 
-const emptyDraft: Draft = { title: '', content: '', target: 'all', scope: 'all', person: '', room: '' }
+const emptyDraft: Draft = { title: '', content: '', audience: 'ALL', person: '', room: '' }
 
 function mapSentNotification(item: NotificationApiDTO): Item {
   const date = new Date(item.created_at)
-  const recipient = item.receiver_name ? `${item.receiver_name}${item.room_number ? ` (${item.room_number})` : ''}` : 'Người thuê'
+  const recipient = item.audience_type === 'ALL'
+    ? 'Tất cả người thuê'
+    : item.audience_type === 'ROOM'
+      ? `Người thuê phòng ${item.room_number ?? ''}`.trim()
+      : item.receiver_name ? `${item.receiver_name}${item.room_number ? ` (${item.room_number})` : ''}` : 'Người thuê'
   return {
     id: item.id,
     title: item.title,
@@ -20,14 +24,15 @@ function mapSentNotification(item: NotificationApiDTO): Item {
 
 export default function NotificationPage() {
   const [items, setItems] = useState<Item[]>([])
-  const [recipients, setRecipients] = useState<NotificationRecipient[]>([])
+  const [recipientsByRoom, setRecipientsByRoom] = useState<Record<string, NotificationRecipient[]>>({})
   const [rooms, setRooms] = useState<NotificationRoom[]>([])
   const [tab, setTab] = useState<'sent' | 'inbox'>('sent')
   const [modal, setModal] = useState<'none' | 'create' | 'confirm'>('none')
   const [draft, setDraft] = useState(emptyDraft)
   const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [loadingRecipients, setLoadingRecipients] = useState(false)
+  const [loadingRooms, setLoadingRooms] = useState(false)
+  const [loadingRoomId, setLoadingRoomId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const selectedItem = items.find(item => item.id === selected)
@@ -47,15 +52,25 @@ export default function NotificationPage() {
 
   const openCreate = async () => {
     setError(null)
-    setLoadingRecipients(true)
     setModal('create')
+    setLoadingRooms(true)
     try {
       const data = await listNotificationRecipients()
-      setRecipients(data.users)
       setRooms(data.rooms)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được danh sách người nhận.')
-    } finally { setLoadingRecipients(false) }
+      setError(cause instanceof Error ? cause.message : 'Không tải được danh sách phòng.')
+    } finally { setLoadingRooms(false) }
+  }
+
+  const loadRecipients = async (roomId: string) => {
+    if (!roomId || Object.prototype.hasOwnProperty.call(recipientsByRoom, roomId) || loadingRoomId === roomId) return
+    setLoadingRoomId(roomId)
+    try {
+      const data = await listNotificationRecipients(roomId)
+      setRecipientsByRoom(current => ({ ...current, [roomId]: data.users }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không tải được người thuê của phòng.')
+    } finally { setLoadingRoomId(current => current === roomId ? null : current) }
   }
 
   const send = async () => {
@@ -65,8 +80,9 @@ export default function NotificationPage() {
       await createNotification({
         title: draft.title,
         content: draft.content,
-        ...(draft.target === 'person' ? { receiver_id: draft.person } : {}),
-        ...(draft.scope === 'room' ? { room_id: draft.room } : {}),
+        audience: draft.audience,
+        ...(draft.audience !== 'ALL' ? { room_id: draft.room } : {}),
+        ...(draft.audience === 'TENANT' ? { receiver_id: draft.person } : {}),
       })
       setDraft(emptyDraft)
       setModal('none')
@@ -88,24 +104,18 @@ export default function NotificationPage() {
     try { await deleteAllSentNotifications(); setItems([]); setError(null) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không xóa được thông báo.') }
   }
-  return <section className="mx-auto flex w-full max-w-[1136px] flex-col gap-6 font-['Inter:Regular']">
-    {error && modal === 'none' && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error} <button type="button" onClick={() => void refreshSent()} className="ml-2 font-bold underline">Retry</button></p>}
-    {loading && <p role="status" className="text-sm text-[#4f5e74]">Loading notifications...</p>}
-    <div className="flex flex-wrap items-end justify-between gap-4">
+  return <section className="mx-auto flex h-full min-h-[420px] w-full max-w-[1136px] min-w-0 flex-col gap-4 font-['Inter:Regular']">
+    {error && modal === 'none' && <p role="alert" className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error} <button type="button" onClick={() => void refreshSent()} className="ml-2 font-bold underline">Thử lại</button></p>}
+    {loading && <p role="status" className="shrink-0 text-sm text-[#4f5e74]">Đang tải thông báo...</p>}
+    <div className="flex shrink-0 flex-wrap items-end justify-between gap-4">
       <div>
-        <div className="flex gap-2 text-[13px]">
-          <span className="text-[#8c9bae]">Tổng quan</span>
-          <span className="text-[#8c9bae]">/</span>
-          <span className="font-['Inter:Bold'] font-bold text-[#172b4d]">Thông báo</span>
-        </div>
         <p className="mt-3 font-['Inter:Extra_Bold'] text-[28px] font-extrabold text-[#1c2534]">Thông Báo</p>
       </div>
       <button type="button" onClick={() => void openCreate()} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-['Inter:Bold'] text-sm font-bold text-white">
-        <img src="/assets/583dd.svg" alt="" width="16" height="16" />
         Tạo thông báo mới
       </button>
     </div>
-    <div className="rounded-xl border border-[#eadfc9] bg-white p-4">
+    <div className="shrink-0 rounded-xl border border-[#eadfc9] bg-white p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
           <button
@@ -134,13 +144,14 @@ export default function NotificationPage() {
     </div>
     {
       visible.length ?
-        <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_4px_8px_rgba(74,59,27,0.08)]">
-          <div className="hidden grid-cols-[16px_minmax(0,1fr)_180px_160px] items-center gap-4 border-b border-[#eadfc9] bg-[#faf8f5] px-6 py-3.5 md:grid">
-            <img src="/assets/35a49.svg" alt="" width="16" height="8" />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_4px_8px_rgba(74,59,27,0.08)]">
+          <div className="hidden shrink-0 grid-cols-[16px_minmax(0,1fr)_180px_160px_auto] items-center gap-4 border-b border-[#eadfc9] bg-[#faf8f5] px-6 py-3.5 md:grid">
+            <span aria-hidden="true" className="block size-2 rounded-full bg-[#f59e0b]" />
             <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">NỘI DUNG THÔNG BÁO</p>
             <p className="font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">ĐỐI TƯỢNG NHẬN</p>
             <p className="text-right font-['Inter:Bold'] text-xs font-bold text-[#8c9bae]">THỜI GIAN GỬI</p>
           </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {
             visible.map(item => (
               <div
@@ -148,12 +159,9 @@ export default function NotificationPage() {
                 className={`grid w-full grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b border-[#f5efe0] px-4 py-4 last:border-0 md:grid-cols-[16px_minmax(0,1fr)_180px_160px_auto] md:px-6 ${item.unread ? 'bg-[#fffbf0]' : 'bg-white'
                   }`}
               >
-                <img
-                  src={item.unread ? '/assets/6a318.svg' : '/assets/82b44.svg'}
-                  alt=""
-                  width="16"
-                  height="8"
-                />
+                <span aria-hidden="true" className={`flex size-4 items-center justify-center ${item.unread ? 'text-[#f59e0b]' : 'text-[#cbd5e1]'}`}>
+                  <svg className="size-3" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="5" /></svg>
+                </span>
 
                 <button
                   type="button"
@@ -195,30 +203,25 @@ export default function NotificationPage() {
                   aria-label={`Xóa thông báo ${item.title}`}
                   className="flex size-8 items-center justify-center rounded-lg text-[#dc2626] transition hover:bg-[#fef2f2]"
                 >
-                  <img
-                    src="/assets/7851d.svg"
-                    alt=""
-                    width="16"
-                    height="16"
-                  />
+                  <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" /></svg>
                 </button>
               </div>
             ))
           }
+          </div>
         </div> :
-        <div className="flex min-h-[350px] flex-col items-center justify-center gap-5 rounded-2xl border border-[#eadfc9] bg-white p-10 text-center">
-          <div className="flex size-20 items-center justify-center rounded-full bg-[#faf8f5]">
-            <img src="/assets/46d07.svg" alt="" width="40" height="40" />
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 rounded-2xl border border-[#eadfc9] bg-white p-6 text-center">
+          <div className="flex size-20 items-center justify-center rounded-full bg-[#faf8f5] text-[#d97706]" aria-hidden="true">
+            <svg className="size-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-5-5.9V4a1 1 0 0 0-2 0v1.1A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0" /></svg>
           </div>
           <div>
             <p className="font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1c2534]">Chưa có thông báo nào</p>
             <p className="mx-auto mt-2 max-w-80 text-sm text-[#4f5e74]">Bạn chưa gửi thông báo nào. Bấm vào nút bên dưới để tạo và gửi thông báo đầu tiên của bạn.</p>
           </div>
-          <button type="button" onClick={() => void openCreate()} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-bold text-white">
-            <img src="/assets/583dd.svg" alt="" width="16" height="16" />Tạo thông báo</button>
+          <button type="button" onClick={() => void openCreate()} className="flex items-center gap-2 rounded-lg bg-[#f59e0b] px-5 py-3 font-bold text-white">Tạo thông báo</button>
         </div>
     }
-    {modal === 'create' && <CreateModal draft={draft} setDraft={setDraft} close={() => setModal('none')} confirm={() => setModal('confirm')} recipients={recipients} rooms={rooms} loadingRecipients={loadingRecipients} error={error} />}
+    {modal === 'create' && <CreateModal draft={draft} setDraft={setDraft} close={() => setModal('none')} confirm={() => setModal('confirm')} recipients={recipientsByRoom[draft.room] ?? []} rooms={rooms} loadingRooms={loadingRooms} loadingRecipients={loadingRoomId === draft.room} loadRecipients={roomId => { void loadRecipients(roomId) }} error={error} />}
     {modal === 'confirm' && <ConfirmModal cancel={() => setModal('create')} send={() => void send()} saving={saving} />}
     {selectedItem && <DetailModal item={selectedItem} close={() => setSelected(null)} />}
   </section>
