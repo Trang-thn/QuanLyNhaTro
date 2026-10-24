@@ -1,24 +1,33 @@
-﻿import { Router } from "express";
-import { amenitiesRouter } from "./amenities";
-import { roomsRouter } from "./rooms";
-import { authRouter } from "./auth";
-import { dashboardRouter } from "./dashboard";
-import { usersRouter } from "./users";
-import { tenantRouter } from "./tenant";
-import { adminRouter } from "./admin";
-import { maintenanceRouter } from "./maintenance";
-import { notificationsRouter } from "./notifications";
+import { Router } from 'express';
+import utilityRoutes from './Utility_Router';
+import roomsRoutes from './rooms_Router';
+import { roomsRouter } from './rooms';
+import { authRouter } from './auth';
+import { dashboardRouter } from './dashboard';
+import { usersRouter } from './users';
+import { tenantRouter } from './tenant';
+import { adminRouter } from './admin';
+import { amenitiesRouter } from './amenities';
+import { maintenanceRouter } from './maintenance';
+import { notificationsRouter } from './notifications';
 
 export const apiRouter = Router();
 
-apiRouter.get("/health", (_req, res) => res.json({ status: "ok" }));
-apiRouter.use("/rooms", roomsRouter);
-apiRouter.use("/maintenance-requests", maintenanceRouter);
-apiRouter.use("/notifications", notificationsRouter);
-// Feature routers: auth, users, rooms, tenants, contracts, billing, maintenance, notifications, dashboard.
-apiRouter.use("/auth", authRouter);
-apiRouter.use("/users", usersRouter);
-apiRouter.use("/dashboard", dashboardRouter);
-apiRouter.use("/tenant", tenantRouter);
-apiRouter.use("/admin", adminRouter);
+apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// Router điện nước
+apiRouter.use('/', utilityRoutes);
+
+// Router phòng
+apiRouter.use('/', roomsRoutes);
+apiRouter.use('/rooms', roomsRouter);
+
+// Các Feature routers khác
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', usersRouter);
+apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/tenant', tenantRouter);
+apiRouter.use('/admin', adminRouter);
+apiRouter.use('/maintenance-requests', maintenanceRouter);
+apiRouter.use('/notifications', notificationsRouter);
 apiRouter.use(amenitiesRouter);

@@ -36,9 +36,14 @@ export default defineConfig(({ mode }) => {
       watch: {
         ignored: ['**/.figma/**'],
       },
-      // Proxy chuyển tiếp API call sang Backend từ File 1
+      // Bổ sung Proxy để tự động chuyển hướng API sang Backend (Cổng 3000)
       proxy: {
         '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/utilities': {
           target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
