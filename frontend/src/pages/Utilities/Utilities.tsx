@@ -23,10 +23,17 @@ export default function Utilities() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const entered = rows.filter(r => r.status !== 'chua_nhap').length
   const total = rows.length
   const period = `Tháng ${month} ${year}`
+
+  useEffect(() => {
+    if (!successMessage) return
+    const timeoutId = window.setTimeout(() => setSuccessMessage(''), 3000)
+    return () => window.clearTimeout(timeoutId)
+  }, [successMessage])
 
   useEffect(() => {
     let cancelled = false
@@ -91,6 +98,7 @@ export default function Utilities() {
           recorded_date: date,
         })
       }
+      setSuccessMessage('Lưu thành công!')
       setModal(null)
       setReloadKey(k => k + 1) // tải lại từ DB để lấy reading_id, trạng thái thật
     } catch (e: any) {
@@ -105,6 +113,18 @@ export default function Utilities() {
 
   return (
     <div className="space-y-5">
+      {successMessage && (
+        <div
+          role="status"
+          className="fixed top-5 right-5 z-[60] flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+        >
+          <svg className="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          {successMessage}
+        </div>
+      )}
+
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
