@@ -1,0 +1,114 @@
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import type { RoomTypeApiDTO } from '../../types/rooms'
+import { useAnchoredMenu } from './useAnchoredMenu'
+
+const NAVY = '#0d2137'
+
+interface Props {
+  value: string
+  onChange: (id: string) => void
+  error?: string
+  showArea?: boolean
+  roomTypes: RoomTypeApiDTO[]
+  loading?: boolean
+  loadError?: string | null
+}
+
+export function RoomTypeDropdown({ value, onChange, error, showArea = false, roomTypes, loading = false, loadError }: Props) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuStyle = useAnchoredMenu(open, triggerRef, 320)
+
+  const selected = roomTypes.find(t => t.id === value)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => { if (!loading && !loadError && roomTypes.length > 0) setOpen(v => !v) }}
+        disabled={loading || !!loadError || roomTypes.length === 0}
+        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition text-left
+          ${error
+            ? 'border-red-400 bg-red-50'
+            : open
+              ? 'border-gray-400 bg-white'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+      >
+        <span className={selected ? 'text-gray-800' : 'text-gray-400'}>
+          {selected
+            ? showArea ? `${selected.name} — ${selected.area_sqm ?? 'Chưa có diện tích'}${selected.area_sqm == null ? '' : 'm²'}` : selected.name
+            : loading ? 'Đang tải loại phòng...'
+              : loadError ? 'Không tải được loại phòng'
+                : roomTypes.length === 0 ? 'Chưa có loại phòng'
+                  : 'Chọn loại phòng'}
+        </span>
+        <svg
+          className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        createPortal(<div ref={menuRef} style={menuStyle} className="overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+          {roomTypes.map(t => {
+            const isSelected = t.id === value
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => { onChange(t.id); setOpen(false) }}
+                className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between"
+                style={{
+                  background: isSelected ? '#f0f4f8' : undefined,
+                  color: isSelected ? NAVY : '#374151',
+                  fontWeight: isSelected ? 600 : 400,
+                }}
+                onMouseEnter={e => {
+                  if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#f9fafb'
+                }}
+                onMouseLeave={e => {
+                  if (!isSelected) (e.currentTarget as HTMLElement).style.background = ''
+                }}
+              >
+                <span>{showArea ? `${t.name} — ${t.area_sqm}m²` : t.name}</span>
+                {isSelected && (
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>, document.body)
+      )}
+
+      {loadError && <p role="alert" className="mt-1 text-xs text-red-500">{loadError}</p>}
+      {!loading && !loadError && roomTypes.length === 0 && <p className="mt-1 text-xs text-gray-500">API chưa trả về loại phòng nào.</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
+  )
+}
