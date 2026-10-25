@@ -1,192 +1,186 @@
 import { RowDataPacket } from 'mysql2';
 import { pool } from '../config/database';
-import { TenantRow, ContractRow } from '../types/tenant';
 
-// Lấy danh sách toàn bộ khách thuê (kèm thông tin user nếu có)
-export async function getAllTenantsService() {
-  const [tenants] = await pool.query<TenantRow[]>(`
-    SELECT t.id, t.user_id, t.identity_card_number, 
-           DATE_FORMAT(t.issue_date, '%Y-%m-%d') AS issue_date, 
-           t.issue_place, t.permanent_address, t.emergency_contact,
-           u.full_name, u.email, u.phone_number
-    FROM tenants t
-    LEFT JOIN users u ON u.id = t.user_id
-    ORDER BY u.full_name ASC
-  `);
-  return tenants;
+import { randomUUID } from 'node:crypto';
+
+export async function getTenantDashboardData(userId: string) {
+  const [tenantRows] = await pool.query<(RowDataPacket & { id: string })[]>(
+    'SELECT id FROM tenants WHERE user_id = ? LIMIT 1', [userId]);
+  const tenantId = tenantRows[0]?.id;
+  if (!tenantId) return { contractId: '', invoices: [], contracts: [], maintenanceRequests: [], rooms: [] };
+
+  const [contracts] = await pool.query<RowDataPacket[]>(
+    `SELECT c.* FROM contracts c
+     WHERE c.representative_tenant_id = ? OR EXISTS (
+       SELECT 1 FROM contract_members cm WHERE cm.contract_id = c.id AND cm.tenant_id = ?
+     ) ORDER BY c.start_date DESC`, [tenantId, tenantId]);
+  const [invoices] = await pool.query<RowDataPacket[]>(
+    `SELECT i.*, c.room_id FROM invoices i JOIN contracts c ON c.id = i.contract_id
+     WHERE c.representative_tenant_id = ? OR EXISTS (
+       SELECT 1 FROM contract_members cm WHERE cm.contract_id = c.id AND cm.tenant_id = ?
+     ) ORDER BY i.billing_year DESC, i.billing_month DESC`, [tenantId, tenantId]);
+  const [maintenanceRequests] = await pool.query<RowDataPacket[]>(
+    `SELECT mr.* FROM maintenance_requests mr WHERE mr.tenant_id = ? ORDER BY mr.created_at DESC`, [tenantId]);
+  const [rooms] = await pool.query<RowDataPacket[]>(
+    `SELECT DISTINCT r.* FROM rooms r JOIN contracts c ON c.room_id = r.id
+     WHERE c.representative_tenant_id = ? OR EXISTS (
+       SELECT 1 FROM contract_members cm WHERE cm.contract_id = c.id AND cm.tenant_id = ?
+     )`, [tenantId, tenantId]);
+  return { contractId: contracts[0]?.id ?? '', invoices, contracts, maintenanceRequests, rooms };
 }
 
-// Lấy chi tiết khách thuê theo ID
-export async function getTenantByIdService(id: string) {
-  const [rows] = await pool.query<TenantRow[]>(`
-    SELECT t.id, t.user_id, t.identity_card_number, 
-           DATE_FORMAT(t.issue_date, '%Y-%m-%d') AS issue_date, 
-           t.issue_place, t.permanent_address, t.emergency_contact,
-           u.full_name, u.email, u.phone_number
+
+
+export async function getAllTenants(keyword?: string) {
+  let sql = `
+    SELECT
+      t.id,
+      t.user_id,
+      t.identity_card_number,
+      t.issue_date,
+      t.issue_place,
+      t.permanent_address,
+      t.emergency_contact,
+      u.full_name,
+      u.username,
+      u.email,
+      u.phone_number
     FROM tenants t
     LEFT JOIN users u ON u.id = t.user_id
-    WHERE t.id = ?
-    LIMIT 1
-  `, [id]);
-  return rows[0] || null;
+  `;
+
+  const values: string[] = [];
+
+  if (keyword?.trim()) {
+    sql += `
+      WHERE t.identity_card_number LIKE ?
+         OR u.full_name LIKE ?
+         OR u.phone_number LIKE ?
+         OR u.username LIKE ?
+    `;
+
+    const search = `%${keyword.trim()}%`;
+    values.push(search, search, search, search);
+  }
+
+  sql += ' ORDER BY u.full_name ASC';
+
+  const [rows] = await pool.query<RowDataPacket[]>(sql, values);
+  return rows;
 }
 
-// Tìm khách thuê theo số CCCD
-export async function getTenantByCCCDService(cccd: string) {
-  const [rows] = await pool.query<TenantRow[]>(`
-    SELECT t.id, t.user_id, t.identity_card_number, 
-           DATE_FORMAT(t.issue_date, '%Y-%m-%d') AS issue_date, 
-           t.issue_place, t.permanent_address, t.emergency_contact,
-           u.full_name, u.email, u.phone_number
-    FROM tenants t
-    LEFT JOIN users u ON u.id = t.user_id
-    WHERE t.identity_card_number = ?
-    LIMIT 1
-  `, [cccd]);
-  return rows[0] || null;
+export async function getTenantById(id: string) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT
+        t.id,
+        t.user_id,
+        t.identity_card_number,
+        t.issue_date,
+        t.issue_place,
+        t.permanent_address,
+        t.emergency_contact,
+        u.full_name,
+        u.username,
+        u.email,
+        u.phone_number
+      FROM tenants t
+      LEFT JOIN users u ON u.id = t.user_id
+      WHERE t.id = ?
+      LIMIT 1
+    `,
+    [id],
+  );
+
+  return rows[0] ?? null;
 }
 
-// Tạo mới khách thuê
-export async function createTenantService(data: {
-  user_id?: string;
+export async function createTenant(data: {
+  user_id?: string | null;
   identity_card_number: string;
-  issue_date?: string;
-  issue_place?: string;
-  permanent_address?: string;
-  emergency_contact?: string;
+  issue_date?: string | null;
+  issue_place?: string | null;
+  permanent_address?: string | null;
+  emergency_contact?: string | null;
 }) {
-  const [result]: any = await pool.query(`
-    INSERT INTO tenants (user_id, identity_card_number, issue_date, issue_place, permanent_address, emergency_contact)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [
-    data.user_id || null,
-    data.identity_card_number,
-    data.issue_date || null,
-    data.issue_place || null,
-    data.permanent_address || null,
-    data.emergency_contact || null
-  ]);
+  const id = randomUUID();
 
-  return getTenantByIdService(result.insertId);
+  await pool.execute(
+    `
+      INSERT INTO tenants (
+        id,
+        user_id,
+        identity_card_number,
+        issue_date,
+        issue_place,
+        permanent_address,
+        emergency_contact
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      id,
+      data.user_id || null,
+      data.identity_card_number.trim(),
+      data.issue_date || null,
+      data.issue_place?.trim() || null,
+      data.permanent_address?.trim() || null,
+      data.emergency_contact?.trim() || null,
+    ],
+  );
+
+  return id;
 }
 
-// Cập nhật thông tin khách thuê
-export async function updateTenantService(id: string, data: any) {
-  await pool.query(`
-    UPDATE tenants 
-    SET identity_card_number = COALESCE(?, identity_card_number),
-        issue_date = COALESCE(?, issue_date),
-        issue_place = COALESCE(?, issue_place),
-        permanent_address = COALESCE(?, permanent_address),
-        emergency_contact = COALESCE(?, emergency_contact)
-    WHERE id = ?
-  `, [
-    data.identity_card_number,
-    data.issue_date,
-    data.issue_place,
-    data.permanent_address,
-    data.emergency_contact,
-    id
-  ]);
+export async function updateTenant(
+  id: string,
+  data: {
+    user_id?: string | null;
+    identity_card_number?: string;
+    issue_date?: string | null;
+    issue_place?: string | null;
+    permanent_address?: string | null;
+    emergency_contact?: string | null;
+  },
+) {
+  const columnMap = {
+    user_id: 'user_id',
+    identity_card_number: 'identity_card_number',
+    issue_date: 'issue_date',
+    issue_place: 'issue_place',
+    permanent_address: 'permanent_address',
+    emergency_contact: 'emergency_contact',
+  } as const;
 
-  return getTenantByIdService(id);
-}
+  const fields: string[] = [];
+  const values: (string | null)[] = [];
 
-// Xóa khách thuê
-export async function deleteTenantService(id: string) {
-  const [result]: any = await pool.query('DELETE FROM tenants WHERE id = ?', [id]);
-  return result.affectedRows > 0;
-}
+  for (const key of Object.keys(data) as (keyof typeof columnMap)[]) {
+    const value = data[key];
 
-// Lập hợp đồng mới (Bao gồm người đại diện, danh sách thành viên ở cùng và cập nhật phòng sang DANG_THUE)
-export async function createContractService(data: {
-  contract_number: string;
-  room_id: string;
-  representative_tenant_id: string;
-  start_date: string;
-  end_date: string;
-  rental_price: number;
-  deposit_amount: number;
-  billing_cycle_day?: number;
-  member_tenant_ids?: string[];
-}) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
+    if (value === undefined) continue;
 
-    // 1. Tạo hợp đồng
-    const [contractResult]: any = await connection.query(`
-      INSERT INTO contracts (contract_number, room_id, representative_tenant_id, start_date, end_date, rental_price, deposit_amount, status, billing_cycle_day)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'HIEU_LUC', ?)
-    `, [
-      data.contract_number,
-      data.room_id,
-      data.representative_tenant_id,
-      data.start_date,
-      data.end_date,
-      data.rental_price,
-      data.deposit_amount,
-      data.billing_cycle_day || 1
-    ]);
+    fields.push(`${columnMap[key]} = ?`);
 
-    const contractId = contractResult.insertId;
-
-    // 2. Thêm thành viên ở cùng vào contract_members (nếu có)
-    if (data.member_tenant_ids && data.member_tenant_ids.length > 0) {
-      const values = data.member_tenant_ids.map(tenantId => [contractId, tenantId]);
-      await connection.query(`
-        INSERT INTO contract_members (contract_id, tenant_id) VALUES ?
-      `, [values]);
+    if (typeof value === 'string') {
+      values.push(value.trim() || null);
+    } else {
+      values.push(value);
     }
-
-    // 3. Cập nhật trạng thái phòng thành 'DANG_THUE'
-    await connection.query(`
-      UPDATE rooms SET status = 'DANG_THUE' WHERE id = ?
-    `, [data.room_id]);
-
-    await connection.commit();
-    return { id: contractId, ...data, status: 'HIEU_LUC' };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
   }
-}
 
-// Thanh lý hợp đồng trước hạn
-export async function terminateContractService(contractId: string) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // 1. Lấy thông tin room_id từ hợp đồng
-    const [contracts] = await connection.query<ContractRow[]>(`
-      SELECT room_id FROM contracts WHERE id = ? LIMIT 1
-    `, [contractId]);
-
-    if (!contracts[0]) {
-      throw new Error('Không tìm thấy hợp đồng');
-    }
-
-    const roomId = contracts[0].room_id;
-
-    // 2. Cập nhật trạng thái hợp đồng thành 'DA_THANH_LY'
-    await connection.query(`
-      UPDATE contracts SET status = 'DA_THANH_LY' WHERE id = ?
-    `, [contractId]);
-
-    // 3. Trả trạng thái phòng về 'TRONG'
-    await connection.query(`
-      UPDATE rooms SET status = 'TRONG' WHERE id = ?
-    `, [roomId]);
-
-    await connection.commit();
-    return { contractId, status: 'DA_THANH_LY' };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
+  if (fields.length === 0) {
+    return (await getTenantById(id)) !== null;
   }
+
+  const [result] = await pool.execute(
+    `UPDATE tenants SET ${fields.join(', ')} WHERE id = ?`,
+    [...values, id],
+  );
+
+  const affectedRows = (result as { affectedRows: number }).affectedRows;
+
+  if (affectedRows > 0) return true;
+
+  return (await getTenantById(id)) !== null;
 }

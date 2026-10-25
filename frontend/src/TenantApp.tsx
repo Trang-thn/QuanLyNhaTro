@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import TenantDashboard from './pages/TenantDashboard'
 import TenantProfile from './pages/TenantProfile'
+/* Temporarily unavailable tenant-owned pages. Restore imports, navigation, and render branches when those modules are integrated.
+import TenantContracts from './pages/TenantContracts'
+import Invoices from './pages/Invoices'
+*/
+import Maintenance from './pages/issues/TenantIncidentsPage'
+import Notifications from './pages/notifications/TenantNotificationsPage'
 import Settings from './pages/Settings'
+import TenantContractPage from './pages/TenantContractPage'
 
-type TenantPage = 'dashboard' | 'profile' | 'settings'
+type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'notifications' | 'contracts' | 'invoices'
 
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
@@ -21,6 +28,32 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
     </svg>,
   },
+  /* Temporarily unavailable tenant-owned pages; restore these navigation entries with their implementations*/
+  {
+    id: 'contracts', label: 'Hợp đồng của tôi',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>,
+  },
+  {
+    id: 'invoices', label: 'Hóa đơn & Thanh toán',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+    </svg>,
+  },
+
+  {
+    id: 'incidents', label: 'Báo cáo sự cố',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>,
+  },
+  {
+    id: 'notifications', label: 'Thông báo',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0H9m6 0v1a3 3 0 11-6 0v-1" />
+    </svg>,
+  },
   {
     id: 'settings', label: 'Cài đặt tài khoản',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
@@ -34,6 +67,10 @@ const pageTitles: Record<TenantPage, string> = {
   dashboard: 'Tổng quan',
   profile: 'Hồ sơ & Phòng ở',
   settings: 'Cài đặt tài khoản',
+  incidents: 'Báo cáo sự cố',
+  notifications: 'Thông báo',
+  contracts: 'Hợp đồng của tôi',
+  invoices: 'Hóa đơn & Thanh toán',
 }
 
 interface Props { onLogout: () => void }
@@ -133,7 +170,7 @@ export default function TenantApp({ onLogout }: Props) {
               </svg>
               <input placeholder="Tìm kiếm..." className="pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-400 w-44 bg-gray-50" />
             </div>
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 transition">
+            <button type="button" aria-label="Mở thông báo" onClick={() => setCurrentPage('notifications')} className="relative p-2 rounded-lg hover:bg-gray-100 transition">
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
@@ -150,8 +187,15 @@ export default function TenantApp({ onLogout }: Props) {
 
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard' && <TenantDashboard />}
-          {currentPage === 'profile'   && <TenantProfile />}
-          {currentPage === 'settings'  && <Settings role="tenant" />}
+          {currentPage === 'profile' && <TenantProfile />}
+          {/* Restore these branches with the tenant-owned page modules. */}
+          {/* {currentPage === 'contracts' && <TenantContracts />}
+          {/*currentPage === 'invoices'  && <Invoices />} */}
+          {currentPage === 'incidents' && <Maintenance />}
+          {currentPage === 'contracts' && <TenantContractPage />}
+          {currentPage === 'notifications' && <Notifications />}
+          {currentPage === 'settings' && <Settings role="tenant" />}
+
         </main>
       </div>
 

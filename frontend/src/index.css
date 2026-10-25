@@ -23,20 +23,3 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c5d3e8; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .contract-print-area, .contract-print-area * {
-    visibility: visible;
-  }
-  .contract-print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: white !important;
-  }
-}

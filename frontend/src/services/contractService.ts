@@ -1,65 +1,138 @@
-import api from './api';
+
+import { apiRequest } from './api'
+
+export type ContractStatus =
+  | 'Đang thuê'
+  | 'Sắp hết hạn'
+  | 'Đã thanh lý'
+
+type NumericValue = number | string | null
 
 export interface Contract {
-  id: string;
-  room_id: string;
-  room_number?: string;
-  representative_tenant_id: string; // Trưởng phòng / Người đại diện
-  representative_name?: string;
-  rental_price: number;
-  deposit_amount: number;
-  start_date: string;
-  end_date: string;
-  billing_cycle_day: number; // Ngày chốt tiền (VD: ngày 01)
-  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED';
-  note?: string;
+  // ID hợp đồng là chuỗi
+  id: string
+
+  code: string
+  tenant_id: number
+  tenant_name?: string
+  room_id: number
+  room_name?: string
+  start_date: string
+  end_date: string
+  rental_price: number
+  deposit_amount: number
+  status: ContractStatus
+  billing_cycle_day?: number
+  note?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
-export interface RenewContractPayload {
-  new_end_date: string;
-  new_price?: number;
+export interface ContractInput {
+  tenant_id: number
+  room_id: number
+  start_date: string
+  end_date: string
+  rental_price: number
+  deposit_amount: number
+  billing_cycle_day?: number
+  note?: string
 }
 
-export interface TerminateContractPayload {
-  termination_date: string;
-  reason?: string;
-  refund_deposit_amount?: number;
+interface ContractResponse
+  extends Omit<Contract, 'rental_price' | 'deposit_amount'> {
+  rental_price: NumericValue
+  deposit_amount: NumericValue
 }
 
-export const contractService = {
-  // Lấy danh sách hợp đồng
-  getAll: async (): Promise<Contract[]> => {
-    const res = await api.get('/contracts');
-    return res.data;
-  },
+/**
+ * Chuyển giá trị tiền thành number.
+ */
+function toNumber(value: NumericValue): number {
+  const parsed = Number(value ?? 0)
+  return Number.isFinite(parsed) ? parsed : 0
+}
 
-  // Lấy chi tiết hợp đồng
-  getById: async (id: string): Promise<Contract> => {
-    const res = await api.get(`/contracts/${id}`);
-    return res.data;
-  },
+/**
+ * Chuẩn hóa dữ liệu hợp đồng từ API.
+ */
+function normalizeContract(contract: ContractResponse): Contract {
+  return {
+    ...contract,
+    id: String(contract.id),
+    rental_price: toNumber(contract.rental_price),
+    deposit_amount: toNumber(contract.deposit_amount),
+  }
+}
 
-  // Tạo hợp đồng thuê phòng mới
-  create: async (data: Omit<Contract, 'id' | 'status'>): Promise<Contract> => {
-    const res = await api.post('/contracts', data);
-    return res.data;
-  },
+/**
+ * Lấy danh sách hợp đồng.
+ */
+export async function getContracts(): Promise<Contract[]> {
+  const response = await apiRequest<ContractResponse[]>('/contracts')
 
-  // Gia hạn hợp đồng (Kết nối với RenewModal.tsx)
-  renew: async (id: string, payload: RenewContractPayload): Promise<Contract> => {
-    const res = await api.post(`/contracts/${id}/renew`, payload);
-    return res.data;
-  },
+  return response.map(normalizeContract)
+}
 
-  // Chấm dứt hợp đồng trước hạn (Kết nối với ContractTerminationModal.tsx)
-  terminate: async (id: string, payload: TerminateContractPayload): Promise<Contract> => {
-    const res = await api.post(`/contracts/${id}/terminate`, payload);
-    return res.data;
-  },
+/**
+ * Lấy thông tin hợp đồng theo ID chuỗi.
+ */
+export async function getContractById(
+  id: string,
+): Promise<Contract> {
+  const response = await apiRequest<ContractResponse>(
+    `/contracts/${encodeURIComponent(id)}`,
+  )
 
-  // Lấy lịch sử hợp đồng của một phòng
-  getByRoomId: async (roomId: string): Promise<Contract[]> => {
-    const res = await api.get(`/contracts/room/${roomId}`);
-    return res.data;
-  },
-};
+  return normalizeContract(response)
+}
+
+/**
+ * Thêm hợp đồng mới.
+ */
+export async function createContract(
+  input: ContractInput,
+): Promise<Contract> {
+  const response = await apiRequest<ContractResponse>('/contracts', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+
+  return normalizeContract(response)
+}
+
+/**
+ * Cập nhật hợp đồng theo ID chuỗi.
+ */
+export async function updateContract(
+  id: string,
+  input: Partial<ContractInput>,
+): Promise<Contract> {
+  const response = await apiRequest<ContractResponse>(
+    `/contracts/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return normalizeContract(response)
+}
+
+/**
+ * Thanh lý hợp đồng theo ID chuỗi.
+ */
+export async function liquidateContract(
+  id: string,
+  note?: string,
+): Promise<Contract> {
+  const response = await apiRequest<ContractResponse>(
+    `/contracts/${encodeURIComponent(id)}/liquidate`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    },
+  )
+
+  return normalizeContract(response)
+}
