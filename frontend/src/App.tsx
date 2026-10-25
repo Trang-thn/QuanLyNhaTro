@@ -11,11 +11,15 @@ import Maintenance from './pages/issues/IssuesPage'
 import Notifications from './pages/notifications/NotificationPage'
 // import Utilities from './pages/Utilities'
 import Settings from './pages/Settings'
+import Utilities from './pages/Utilities/Utilities'
+import Invoices from './pages/invoice/Invoices'
+
+//import TenantApp from './TenantApp'
 import TenantRegistrationQueue from './pages/TenantRegistrationQueue'
 import TenantApp from './TenantApp'
 import { apiRequest, clearAuthToken, getAuthToken } from './services/api'
 
-type Page = 'dashboard' | 'settings' | 'tenant-registrations' | 'rooms' | 'maintenance' | 'notifications'
+type Page = 'dashboard' | 'settings' | 'tenant-registrations' | 'invoices' | 'utilities' | 'rooms' | 'maintenance' | 'notifications'
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
@@ -41,17 +45,10 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
     </svg>,
   },
   */
-  /* Temporarily disabled owner modules; restore these navigation entries with their page components.
-  {
-    id: 'contracts', label: 'Hợp đồng',
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>,
-  },
   {
     id: 'invoices', label: 'Hóa đơn',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5-2z" />
     </svg>,
   },
   {
@@ -60,7 +57,6 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>,
   },
-  */
   {
     id: 'maintenance', label: 'Sự cố',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,6 +86,8 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
 
 const pageTitles: Record<Page, string> = {
   dashboard: 'Tổng quan',
+  invoices: 'Hóa đơn',
+  utilities: 'Điện nước',
   settings: 'Cài đặt',
   'tenant-registrations': 'Yêu cầu đăng ký Tenant',
   rooms: 'Phòng',
@@ -370,6 +368,10 @@ export default function App() {
     return <Login onLogin={(r) => { setRole(r); setCurrentPage('dashboard') }} />
   }
 
+  // if (role === 'tenant') {
+  //   return <TenantApp onLogout={() => setRole(null)} />
+  // }
+
   if (role === 'tenant') {
     return <TenantApp onLogout={() => { clearAuthToken(); setRole(null) }} />
   }
@@ -419,11 +421,9 @@ export default function App() {
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard' && <Dashboard />}
           {currentPage === 'rooms' && <Rooms />}
+          {currentPage === 'invoices' && <Invoices />}
+          {currentPage === 'utilities' && <Utilities />}
           {/* Restore tenant/contract/invoice/utilities render branches with their owner modules. */}
-          {/* {currentPage === 'tenants'        && <Tenants />}
-          {currentPage === 'contracts'      && <Contracts />}
-          {currentPage === 'invoices'       && <Invoices />}
-          {currentPage === 'utilities'      && <Utilities />} */}
           {currentPage === 'maintenance' && <Maintenance />}
           {currentPage === 'notifications' && <Notifications />}
           {currentPage === 'settings' && <Settings role="admin" />}
