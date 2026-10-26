@@ -2,6 +2,7 @@
 name: utility-fullstack-review
 description: Rà soát và sửa lỗi luồng ghi chỉ số điện nước theo API và nghiệp vụ hiện có trong dự án QuanLyNhaTro.
 ---
+
 # Rà soát chức năng điện nước
 
 Dùng skill này khi người dùng yêu cầu rà soát, sửa lỗi hoặc hoàn thiện chức năng nhập và cập nhật chỉ số điện/nước. Đối chiếu triển khai thực tế ở cả frontend, API, database và luồng lập hóa đơn; không giả định hành vi chỉ dựa trên tài liệu cũ.

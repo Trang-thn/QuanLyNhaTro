@@ -1,3 +1,4 @@
+
 ---
 name: project-safety-guard
 description: Áp dụng quy tắc an toàn khi kiểm tra, sửa lỗi, phát triển, kiểm thử hoặc tích hợp mã nguồn trong dự án nhóm. Dùng để giới hạn phạm vi thay đổi, bảo vệ phần việc của thành viên khác, giữ nguyên các thay đổi đang có và tránh thao tác Git gây mất dữ liệu.

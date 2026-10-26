@@ -2,6 +2,7 @@
 name: invoice_backend
 description: Thiết kế, rà soát hoặc triển khai backend cho hóa đơn, chốt kỳ điện nước, thanh toán và mở lại hóa đơn chưa thanh toán trong dự án QuanLyNhaTro.
 ---
+
 # Skill: Backend hóa đơn
 
 ## 1. Mục đích và thời điểm kích hoạt
