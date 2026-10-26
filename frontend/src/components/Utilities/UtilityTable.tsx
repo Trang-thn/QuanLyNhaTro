@@ -28,6 +28,7 @@ export default function UtilityTable({ filtered, entered, total, setModal }: Uti
               }
               const s = statusConfig[row.status]
               const isChua = row.status === 'chua_nhap'
+              const locked = row.status === 'co_hoa_don'
 
               return (
                 <tr key={row.id} className={`border-t border-gray-50 hover:bg-gray-50/60 transition-colors ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}>
@@ -59,7 +60,9 @@ export default function UtilityTable({ filtered, entered, total, setModal }: Uti
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
+                    {locked ? (
+                      <span className="text-xs font-semibold text-emerald-700">Đã chốt kỳ</span>
+                    ) : <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setModal({ row, mode: 'nhap' })}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-white text-xs font-semibold transition"
@@ -77,7 +80,7 @@ export default function UtilityTable({ filtered, entered, total, setModal }: Uti
                         </svg>
                         Sửa
                       </button>
-                    </div>
+                    </div>}
                   </td>
                 </tr>
               )

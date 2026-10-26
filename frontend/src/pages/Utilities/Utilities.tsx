@@ -4,6 +4,7 @@ import type { UtilityRow, Status } from '../../types/Utilities/utility'
 import UtilityModal from '../../components/Utilities/UtilityFormModal'
 import UtilityTable from '../../components/Utilities/UtilityTable'
 import { saveUtilityReading, updateUtilityReading, fetchUtilityReadings } from '../../services/Utilities'
+import { apiRequest } from '../../services/api'
 
 const statusMap: Record<string, Status> = {
   DA_CO_HOA_DON: 'co_hoa_don',
@@ -27,6 +28,7 @@ export default function Utilities() {
 
   const entered = rows.filter(r => r.status !== 'chua_nhap').length
   const total = rows.length
+  const canFinalize = total > 0 && entered === total && rows.some(r => r.status !== 'co_hoa_don')
   const period = `Tháng ${month} ${year}`
 
   useEffect(() => {
@@ -98,11 +100,27 @@ export default function Utilities() {
           recorded_date: date,
         })
       }
-      setSuccessMessage('Lưu thành công!')
+      setSuccessMessage('Đã lưu chỉ số. Kiểm tra lại số liệu rồi chốt kỳ khi sẵn sàng.')
       setModal(null)
       setReloadKey(k => k + 1) // tải lại từ DB để lấy reading_id, trạng thái thật
     } catch (e: any) {
       alert(e.message || 'Không thể lưu vào cơ sở dữ liệu!')
+    }
+  }
+
+  async function handleFinalizePeriod() {
+    if (!canFinalize) return
+    if (!window.confirm(`Chốt kỳ tháng ${month}/${year} và tạo/cập nhật hóa đơn cho các phòng chưa chốt?`)) return
+    try {
+      const result = await apiRequest<{ data: { created: number; updated: number; skipped: number } }>('/invoices/generate', {
+        method: 'POST',
+        body: JSON.stringify({ month: parseInt(month, 10), year: parseInt(year, 10) }),
+      })
+      const { created, updated, skipped } = result.data
+      setSuccessMessage(`Đã chốt kỳ ${month}/${year}: tạo ${created} hóa đơn, tính lại ${updated} hóa đơn đã mở${skipped ? `, bỏ qua ${skipped} phòng` : ''}.`)
+      setReloadKey(key => key + 1)
+    } catch (err) {
+      alert((err as Error).message || 'Không thể chốt kỳ')
     }
   }
 
@@ -179,6 +197,13 @@ export default function Utilities() {
             </svg>
             Nhập chỉ số
           </button>
+          {canFinalize && (
+            <button onClick={handleFinalizePeriod}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold transition shrink-0"
+              style={{ background: AMBER }}>
+              Chốt tháng
+            </button>
+          )}
         </div>
       </div>
 

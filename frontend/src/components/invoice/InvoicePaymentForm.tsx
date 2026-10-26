@@ -3,7 +3,7 @@ import { INVOICE_NAVY_COLOR }  from '../../types/invoice/invoice'
 
 interface InvoicePaymentFormProps {
   remaining: number
-  onPay: (payAmount: string, payMethod: string, payNote: string) => void
+  onPay: (payAmount: string, payMethod: string, payNote: string) => Promise<void> | void
 }
 
 export function InvoicePaymentForm({ remaining, onPay }: InvoicePaymentFormProps) {
@@ -11,10 +11,14 @@ export function InvoicePaymentForm({ remaining, onPay }: InvoicePaymentFormProps
   const [payMethod, setPayMethod] = useState('Tiền mặt')
   const [payNote, setPayNote]     = useState('')
 
-  function handleSubmit() {
-    onPay(payAmount, payMethod, payNote)
-    setPayAmount('')
-    setPayNote('')
+  async function handleSubmit() {
+    try {
+      await onPay(payAmount, payMethod, payNote)
+      setPayAmount('')
+      setPayNote('')
+    } catch {
+      // The page displays the request error.
+    }
   }
 
   return (

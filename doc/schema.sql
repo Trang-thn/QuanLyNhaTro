@@ -71,6 +71,13 @@ CREATE TABLE utility_readings (
   CONSTRAINT uq_room_billing_period UNIQUE (room_id, billing_month, billing_year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE utility_prices (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  electricity_price_per_kwh DECIMAL(12,2) NOT NULL,
+  water_price_per_m3 DECIMAL(12,2) NOT NULL,
+  effective_from DATE NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE invoices (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), invoice_code VARCHAR(50) UNIQUE NOT NULL,
   contract_id VARCHAR(36), utility_reading_id VARCHAR(36), billing_month INT NOT NULL, billing_year INT NOT NULL,
@@ -78,7 +85,8 @@ CREATE TABLE invoices (
   other_service_cost DECIMAL(12,2) DEFAULT 0, total_amount DECIMAL(12,2) NOT NULL, paid_amount DECIMAL(12,2) DEFAULT 0,
   status VARCHAR(20) DEFAULT 'CHUA_THANH_TOAN', due_date DATE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_invoices_contracts FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_invoices_readings FOREIGN KEY (utility_reading_id) REFERENCES utility_readings(id) ON DELETE SET NULL
+  CONSTRAINT fk_invoices_readings FOREIGN KEY (utility_reading_id) REFERENCES utility_readings(id) ON DELETE SET NULL,
+  CONSTRAINT uq_invoice_contract_period UNIQUE (contract_id, billing_month, billing_year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE payments (

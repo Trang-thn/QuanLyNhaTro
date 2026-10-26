@@ -1,6 +1,6 @@
-import { invoiceStatusConfig } from '../../types/invoice/invoice'
+import { invoiceStatusConfig, InvoiceStatus } from '../../types/invoice/invoice'
 
-export function InvoiceStatusBadge({ status }: { status: string }) {
+export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   const s = invoiceStatusConfig[status] ?? invoiceStatusConfig.CHUA_THANH_TOAN
   return (
     <span
