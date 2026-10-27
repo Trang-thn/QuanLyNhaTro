@@ -6,6 +6,7 @@ import {
   getTenantById,
   createTenant,
   updateTenant,
+   deleteTenant,
 } from '../services/tenant';
 
 export async function getTenantProfile(req: Request, res: Response): Promise<void> {
@@ -93,18 +94,25 @@ export async function createNewTenant(
     }
 
     const id = await createTenant({
-      user_id: data.user_id ?? null,
+      full_name: data.full_name ?? null,
+      date_of_birth: data.date_of_birth || null,
       identity_card_number: data.identity_card_number.trim(),
-      issue_date: data.issue_date ?? null,
+      issue_date: data.issue_date || null,
       issue_place: data.issue_place ?? null,
       permanent_address: data.permanent_address ?? null,
       emergency_contact: data.emergency_contact ?? null,
+      phone: data.phone ?? null,
+      email: data.email ?? null,
+      gender: data.gender ?? null,
+      avatar: data.avatar ?? null,
+
+      // Khách thuê không cần tài khoản đăng nhập.
+      user_id: null,
     });
 
-    res.status(201).json({
-      message: 'Thêm khách thuê thành công',
-      id,
-    });
+    const tenant = await getTenantById(id);
+
+    res.status(201).json(tenant);
   } catch (error) {
     console.error('Lỗi thêm khách thuê:', error);
 
@@ -112,7 +120,7 @@ export async function createNewTenant(
 
     if (dbError.code === 'ER_DUP_ENTRY') {
       res.status(409).json({
-        message: 'Số CCCD hoặc tài khoản đã được sử dụng',
+        message: 'Số CCCD đã được sử dụng',
       });
       return;
     }
@@ -163,6 +171,53 @@ export async function updateExistingTenant(
 
     res.status(500).json({
       message: 'Không thể cập nhật khách thuê',
+    });
+  }
+}
+export async function deleteExistingTenant(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      res.status(400).json({
+        message: 'Thiếu mã khách thuê cần xóa',
+      });
+      return;
+    }
+
+    const deleted = await deleteTenant(id);
+
+    if (!deleted) {
+      res.status(404).json({
+        message: 'Không tìm thấy khách thuê',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Xóa khách thuê thành công',
+    });
+  } catch (error) {
+    console.error('Lỗi xóa khách thuê:', error);
+
+    const dbError = error as { code?: string };
+
+    if (
+      dbError.code === 'ER_ROW_IS_REFERENCED_2' ||
+      dbError.code === 'ER_ROW_IS_REFERENCED'
+    ) {
+      res.status(409).json({
+        message:
+          'Không thể xóa khách thuê vì đang có hợp đồng hoặc dữ liệu liên quan.',
+      });
+      return;
+    }
+
+    res.status(500).json({
+      message: 'Không thể xóa khách thuê. Vui lòng kiểm tra lại.',
     });
   }
 }

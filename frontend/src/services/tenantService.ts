@@ -80,26 +80,49 @@ function normalizeTenant(raw: ApiRecord): TenantType {
 function toApiInput(
   input: CreateTenantRequest | UpdateTenantRequest,
 ): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
+  const result: Record<string, unknown> = {};
 
-  if ('full_name' in input) result.name = input.full_name
-  if ('date_of_birth' in input) result.birthday = input.date_of_birth
+  if ('full_name' in input) {
+    result.full_name = input.full_name;
+  }
+
+  if ('date_of_birth' in input) {
+    result.date_of_birth = input.date_of_birth || null;
+  }
+
   if ('identity_card_number' in input) {
-  result.identity_card_number = input.identity_card_number
-}
-  if ('issue_place' in input) result.issue_place = input.issue_place
-  if ('permanent_address' in input) {
-    result.address = input.permanent_address
+    result.identity_card_number = input.identity_card_number;
   }
-  if ('emergency_contact' in input) {
-    result.emergency_contact = input.emergency_contact
-  }
-  if ('phone' in input) result.phone = input.phone
-  if ('email' in input) result.email = input.email
-  if ('gender' in input) result.gender = input.gender
-  if ('avatar' in input) result.avatar = input.avatar
 
-  return result
+  if ('issue_place' in input) {
+    result.issue_place = input.issue_place;
+  }
+
+  if ('permanent_address' in input) {
+    result.permanent_address = input.permanent_address;
+  }
+
+  if ('emergency_contact' in input) {
+    result.emergency_contact = input.emergency_contact;
+  }
+
+  if ('phone' in input) {
+    result.phone = input.phone;
+  }
+
+  if ('email' in input) {
+    result.email = input.email;
+  }
+
+  if ('gender' in input) {
+    result.gender = input.gender;
+  }
+
+  if ('avatar' in input) {
+    result.avatar = input.avatar;
+  }
+
+  return result;
 }
 
 export async function getTenants(): Promise<TenantType[]> {
@@ -130,20 +153,17 @@ export async function createTenant(
   return normalizeTenant(response)
 }
 
-export async function updateTenant(
-  id: string,
-  input: UpdateTenantRequest,
-): Promise<TenantType> {
-  const response = await apiRequest<ApiRecord>(`/tenantqlkt/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(toApiInput(input)),
-  })
 
-  return normalizeTenant(response)
+export async function updateTenant(id: string, data: any) {
+  return apiRequest<void>(`/tenantqlkt/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
-export async function deleteTenant(id: string): Promise<void> {
-  await apiRequest<void>(`/tenantqlkt/${id}`, {
+export async function deleteTenant(id: string) {
+  return apiRequest<void>(`/tenantqlkt/${id}`, {
     method: 'DELETE',
-  })
+  });
 }
+

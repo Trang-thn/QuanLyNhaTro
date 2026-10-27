@@ -5,6 +5,7 @@ import {
   getTenantDetail,
   createNewTenant,
   updateExistingTenant,
+  deleteExistingTenant,
 } from '../controllers/tenant';
 import { authenticate, allowRoles } from '../middleware/auth';
 
@@ -17,3 +18,4 @@ tenantsRouter.get('/', getTenants);
 tenantsRouter.get('/:id', getTenantDetail);
 tenantsRouter.post('/', createNewTenant);
 tenantsRouter.patch('/:id', updateExistingTenant);
+tenantsRouter.delete('/:id', deleteExistingTenant);

@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 
@@ -47,16 +48,29 @@ function statusLabel(status: ContractStatus): string {
   }
 }
 
+// Lấy số phòng để hiển thị.
+// Không sử dụng room_id làm số phòng vì room_id có thể là UUID.
+function getRoomNumber(contract: Contract): string {
+  const roomNumber = contract.room_number
+
+  if (
+    roomNumber !== undefined &&
+    roomNumber !== null &&
+    String(roomNumber).trim() !== ''
+  ) {
+    return String(roomNumber).trim()
+  }
+
+  return 'Chưa có số phòng'
+}
+
 /**
  * Chuyển dữ liệu form sang định dạng mà contractService yêu cầu.
  *
- * Giao diện:
- * representative_tenant_id: string
- * room_id: string
- *
- * Service:
- * tenant_id: number
- * room_id: number
+ * Lưu ý:
+ * Hàm này giữ nguyên cách gửi dữ liệu của code hiện tại.
+ * Nếu service hoặc backend sử dụng UUID thay vì ID số,
+ * cần điều chỉnh riêng theo API thực tế.
  */
 function toContractInput(form: CreateContractRequest) {
   const roomId = Number(form.room_id)
@@ -135,23 +149,32 @@ export default function ContractManagement({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Tìm kiếm hợp đồng và lọc trạng thái.
+  // Tìm kiếm theo mã hợp đồng hoặc số phòng.
   const filteredContracts = useMemo(() => {
-    const value = keyword.trim().toLowerCase()
+    const value = String(keyword ?? '')
+      .trim()
+      .toLowerCase()
 
-    return contracts.filter((contract) => {
-      const matchesKeyword =
-        !value ||
-        contract.contract_number.toLowerCase().includes(value) ||
-        (contract.room_number ?? '').toLowerCase().includes(value) ||
-        contract.room_id.toLowerCase().includes(value)
+    return (Array.isArray(contracts) ? contracts : []).filter(
+      (contract) => {
+        const contractNumber = String(
+          contract.contract_number ?? '',
+        ).toLowerCase()
 
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        contract.status === statusFilter
+        const roomNumber = getRoomNumber(contract).toLowerCase()
 
-      return matchesKeyword && matchesStatus
-    })
+        const matchesKeyword =
+          !value ||
+          contractNumber.includes(value) ||
+          roomNumber.includes(value)
+
+        const matchesStatus =
+          statusFilter === 'ALL' ||
+          contract.status === statusFilter
+
+        return matchesKeyword && matchesStatus
+      },
+    )
   }, [contracts, keyword, statusFilter])
 
   // Mở form thêm hợp đồng.
@@ -167,15 +190,17 @@ export default function ContractManagement({
     setSelected(contract)
 
     setForm({
-      contract_number: contract.contract_number,
-      room_id: contract.room_id,
+      contract_number: contract.contract_number ?? '',
+      room_id: contract.room_id ?? '',
       representative_tenant_id:
-        contract.representative_tenant_id,
-      start_date: contract.start_date.slice(0, 10),
-      end_date: contract.end_date.slice(0, 10),
-      rental_price: contract.rental_price,
-      deposit_amount: contract.deposit_amount,
-      billing_cycle_day: contract.billing_cycle_day,
+        contract.representative_tenant_id ?? '',
+      start_date: String(contract.start_date ?? '').slice(0, 10),
+      end_date: String(contract.end_date ?? '').slice(0, 10),
+      rental_price: Number(contract.rental_price ?? 0),
+      deposit_amount: Number(contract.deposit_amount ?? 0),
+      billing_cycle_day: Number(
+        contract.billing_cycle_day ?? 1,
+      ),
     })
 
     setError('')
@@ -199,8 +224,7 @@ export default function ContractManagement({
       const input = toContractInput(form)
 
       if (selected) {
-        // ID hợp đồng giữ nguyên kiểu string.
-        await updateContract(selected.id, input)
+      await updateContract(selected.id, input)
       } else {
         await createContract(input)
       }
@@ -228,7 +252,9 @@ export default function ContractManagement({
     }
 
     const confirmed = window.confirm(
-      `Bạn có chắc muốn thanh lý hợp đồng ${contract.contract_number}?`,
+      `Bạn có chắc muốn thanh lý hợp đồng ${
+        contract.contract_number ?? ''
+      }?`,
     )
 
     if (!confirmed) {
@@ -236,10 +262,8 @@ export default function ContractManagement({
     }
 
     try {
-      // ID hợp đồng là string.
-      await liquidateContract(contract.id)
-
-      onReload()
+     await liquidateContract(contract.id)
+     onReload()
     } catch (err) {
       window.alert(
         err instanceof Error
@@ -254,7 +278,7 @@ export default function ContractManagement({
 
   return (
     <div className="space-y-5">
-      {/* Tiêu đề và nút thêm hợp đồng */}
+      {/* Tiêu đề */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2
@@ -304,7 +328,7 @@ export default function ContractManagement({
         </select>
       </div>
 
-      {/* Bảng danh sách hợp đồng */}
+      {/* Danh sách hợp đồng */}
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
         <table className="w-full min-w-[1050px] text-left text-sm">
           <thead
@@ -332,27 +356,34 @@ export default function ContractManagement({
                 <td className="p-4">{index + 1}</td>
 
                 <td className="p-4 font-medium">
-                  {contract.contract_number}
+                  {contract.contract_number || 'Chưa có mã'}
+                </td>
+
+                {/* Chỉ hiển thị số phòng, không hiển thị UUID */}
+                <td className="p-4 font-medium">
+                  {getRoomNumber(contract)}
                 </td>
 
                 <td className="p-4">
-                  {contract.room_number ?? contract.room_id}
+                  {String(contract.start_date ?? '').slice(0, 10)}
                 </td>
 
                 <td className="p-4">
-                  {contract.start_date.slice(0, 10)}
+                  {String(contract.end_date ?? '').slice(0, 10)}
                 </td>
 
                 <td className="p-4">
-                  {contract.end_date.slice(0, 10)}
+                  {Number(
+                    contract.rental_price ?? 0,
+                  ).toLocaleString('vi-VN')}{' '}
+                  
                 </td>
 
                 <td className="p-4">
-                  {contract.rental_price.toLocaleString('vi-VN')} đ
-                </td>
-
-                <td className="p-4">
-                  {contract.deposit_amount.toLocaleString('vi-VN')} đ
+                  {Number(
+                    contract.deposit_amount ?? 0,
+                  ).toLocaleString('vi-VN')}{' '}
+                  đ
                 </td>
 
                 <td className="p-4">
@@ -400,7 +431,7 @@ export default function ContractManagement({
         </table>
       </div>
 
-      {/* Form thêm và chỉnh sửa hợp đồng */}
+      {/* Form thêm hoặc sửa hợp đồng */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
           <div className="my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6">

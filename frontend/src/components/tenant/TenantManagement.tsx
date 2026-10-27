@@ -1,5 +1,6 @@
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+
 import type {
   Tenant,
   CreateTenantRequest,
@@ -34,7 +35,7 @@ interface Props {
 }
 
 // Lấy ngày hiện tại theo định dạng YYYY-MM-DD
-function getTodayString() {
+function getTodayString(): string {
   const today = new Date()
 
   const year = today.getFullYear()
@@ -42,6 +43,17 @@ function getTodayString() {
   const day = String(today.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
+}
+
+// Chuẩn hóa tên khách hàng để hỗ trợ cả full_name và name
+function getTenantName(tenant: Tenant): string {
+  const data = tenant as Tenant & { name?: string }
+
+  return (
+    data.full_name?.trim() ||
+    data.name?.trim() ||
+    'Chưa cập nhật'
+  )
 }
 
 export default function TenantManagement({
@@ -71,19 +83,21 @@ export default function TenantManagement({
 
     if (!value) return tenants
 
-    return tenants.filter((tenant) =>
-      [
-        tenant.full_name,
+    return tenants.filter((tenant) => {
+      const name = getTenantName(tenant)
+
+      return [
+        name,
         tenant.identity_card_number,
         tenant.phone,
         tenant.email,
       ].some((item) =>
         String(item ?? '').toLowerCase().includes(value),
-      ),
-    )
+      )
+    })
   }, [tenants, keyword])
 
-  // Mở popup thêm khách hàng
+  // Mở form thêm khách hàng
   function openCreateForm() {
     setSelectedTenant(null)
     setForm({ ...emptyForm })
@@ -91,21 +105,33 @@ export default function TenantManagement({
     setShowForm(true)
   }
 
-  // Mở popup sửa khách hàng
+  // Mở form sửa khách hàng
   function openEditForm(tenant: Tenant) {
     setSelectedTenant(tenant)
 
     setForm({
-      full_name: tenant.full_name ?? '',
+      full_name: getTenantName(tenant) === 'Chưa cập nhật'
+        ? ''
+        : getTenantName(tenant),
+
       date_of_birth: tenant.date_of_birth
         ? String(tenant.date_of_birth).slice(0, 10)
         : '',
-      identity_card_number: tenant.identity_card_number ?? '',
+
+      identity_card_number:
+        tenant.identity_card_number ?? '',
+
       phone: tenant.phone ?? '',
       email: tenant.email ?? '',
-      permanent_address: tenant.permanent_address ?? '',
+
+      permanent_address:
+        tenant.permanent_address ?? '',
+
       issue_place: tenant.issue_place ?? '',
-      emergency_contact: tenant.emergency_contact ?? '',
+
+      emergency_contact:
+        tenant.emergency_contact ?? '',
+
       gender: tenant.gender ?? null,
       avatar: tenant.avatar ?? null,
     })
@@ -114,7 +140,7 @@ export default function TenantManagement({
     setShowForm(true)
   }
 
-  // Đóng popup
+  // Đóng form
   function closeForm() {
     if (saving) return
 
@@ -124,7 +150,7 @@ export default function TenantManagement({
     setError('')
   }
 
-  // Cập nhật giá trị của một trường
+  // Cập nhật dữ liệu form
   function updateField<K extends keyof CreateTenantRequest>(
     field: K,
     value: CreateTenantRequest[K],
@@ -135,7 +161,7 @@ export default function TenantManagement({
     }))
   }
 
-  // Kiểm tra dữ liệu và thêm mới hoặc cập nhật khách hàng
+  // Kiểm tra dữ liệu trước khi gửi lên backend
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -144,115 +170,125 @@ export default function TenantManagement({
     if (saving) return
 
     setError('')
-
-    // Chuẩn hóa dữ liệu
+    
     const fullName = (form.full_name ?? '').trim()
+
     const identityNumber = (
       form.identity_card_number ?? ''
     ).trim()
-    const birthday = (form.date_of_birth ?? '').trim()
+
+    const birthday = (
+      form.date_of_birth ?? ''
+    ).trim()
+
     const phone = (form.phone ?? '').trim()
     const issuePlace = (form.issue_place ?? '').trim()
     const gender = form.gender
 
-    // 1. Bắt buộc nhập họ tên
+    // 1. Kiểm tra họ tên
     if (!fullName) {
       setError('Vui lòng nhập họ và tên khách hàng.')
       return
     }
 
-    // 2. CCCD phải có đúng 12 chữ số
+    // 2. Kiểm tra CCCD gồm đúng 12 chữ số
     if (!/^\d{12}$/.test(identityNumber)) {
       setError('CCCD phải gồm đúng 12 chữ số.')
       return
     }
 
-    // 3. Bắt buộc nhập ngày sinh
+    // 3. Kiểm tra ngày sinh
     if (!birthday) {
       setError('Vui lòng chọn ngày sinh.')
       return
     }
-
-    // Kiểm tra ngày sinh có đúng định dạng YYYY-MM-DD
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+   if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
       setError('Ngày sinh không hợp lệ.')
       return
     }
+   const birthdayDate = new Date(`${birthday}T00:00:00`)
 
-    // Kiểm tra ngày có tồn tại thực tế
-    const birthdayDate = new Date(`${birthday}T00:00:00`)
-
+    // Đảm bảo ngày, tháng, năm tồn tại thực tế
     if (
       Number.isNaN(birthdayDate.getTime()) ||
-      birthdayDate.getFullYear() !== Number(birthday.slice(0, 4)) ||
-      birthdayDate.getMonth() + 1 !== Number(birthday.slice(5, 7)) ||
-      birthdayDate.getDate() !== Number(birthday.slice(8, 10))
+      birthdayDate.getFullYear() !==
+        Number(birthday.slice(0, 4)) ||
+      birthdayDate.getMonth() + 1 !==
+        Number(birthday.slice(5, 7)) ||
+      birthdayDate.getDate() !==
+        Number(birthday.slice(8, 10))
     ) {
       setError('Ngày sinh không hợp lệ.')
       return
     }
 
-    // Ngày sinh không được ở tương lai
+    // Ngày sinh không được lớn hơn ngày hiện tại
     if (birthday > getTodayString()) {
       setError('Ngày sinh không được ở trong tương lai.')
       return
     }
 
-    // 4. Bắt buộc chọn giới tính
+    // 4. Kiểm tra giới tính
     if (!gender) {
       setError('Vui lòng chọn giới tính.')
       return
     }
 
-    // 5. Bắt buộc nhập số điện thoại
+    // 5. Kiểm tra số điện thoại
     if (!phone) {
       setError('Vui lòng nhập số điện thoại.')
       return
     }
 
-    // Số điện thoại chỉ được chứa chữ số
-    if (!/^\d+$/.test(phone)) {
+   if (!/^\d+$/.test(phone)) {
       setError('Số điện thoại chỉ được chứa chữ số.')
       return
     }
 
-    // 6. Bắt buộc nhập nơi cấp CCCD
+    // 6. Kiểm tra nơi cấp CCCD
     if (!issuePlace) {
       setError('Vui lòng nhập nơi cấp CCCD.')
       return
     }
 
-    // Chuẩn bị dữ liệu gửi lên backend
+    // Chuẩn bị dữ liệu gửi lên API
     const payload: CreateTenantRequest = {
       ...form,
+
       full_name: fullName,
       identity_card_number: identityNumber,
       date_of_birth: birthday,
       phone,
+
       email: (form.email ?? '').trim(),
+
       permanent_address: (
         form.permanent_address ?? ''
       ).trim(),
+
       issue_place: issuePlace,
+
       emergency_contact: (
         form.emergency_contact ?? ''
       ).trim(),
+
       gender,
     }
 
     setSaving(true)
 
     try {
-      // Gọi API thêm mới hoặc cập nhật
+      // Thêm mới hoặc cập nhật khách hàng
       if (selectedTenant) {
         await updateTenant(selectedTenant.id, payload)
       } else {
         await createTenant(payload)
       }
 
-      // Tải lại danh sách trước khi đóng popup
+      // Tải lại danh sách từ API sau khi lưu thành công
       await onReload()
 
+      // Chỉ đóng form sau khi tải lại danh sách hoàn tất
       setShowForm(false)
       setSelectedTenant(null)
       setForm({ ...emptyForm })
@@ -273,9 +309,7 @@ export default function TenantManagement({
     if (deletingId !== null || saving) return
 
     const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa khách hàng "${
-        tenant.full_name || tenant.id
-      }" không?`,
+      `Bạn có chắc muốn xóa khách hàng "${getTenantName(tenant)}" không?`,
     )
 
     if (!confirmed) return
@@ -285,6 +319,8 @@ export default function TenantManagement({
 
     try {
       await deleteTenant(tenant.id)
+
+      // Tải lại danh sách sau khi xóa
       await onReload()
     } catch (err: unknown) {
       window.alert(
@@ -299,16 +335,11 @@ export default function TenantManagement({
 
   const inputClass =
     'w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
-
-  function setCccdReady(arg0: boolean) {
-    throw new Error('Function not implemented.')
-  }
-
-  return (
+ return (
     <div className="space-y-5">
-      {/* Tiêu đề và nút thêm */}
+      {/* Tiêu đề và nút thêm khách hàng */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-       {} <div>
+        <div>
           <h2
             className="text-2xl font-bold"
             style={{ color: NAVY }}
@@ -319,7 +350,7 @@ export default function TenantManagement({
           <p className="mt-1 text-sm text-gray-500">
             Quản lý hồ sơ và thông tin liên hệ của khách thuê.
           </p>
-        </div> 
+        </div>
 
         <button
           type="button"
@@ -331,7 +362,7 @@ export default function TenantManagement({
         </button>
       </div>
 
-      {/* Tìm kiếm */}
+      {/* Tìm kiếm khách hàng */}
       <div className="rounded-xl bg-white p-4 shadow-sm">
         <input
           type="search"
@@ -343,11 +374,14 @@ export default function TenantManagement({
         />
       </div>
 
-      {/* Bảng khách hàng */}
+      {/* Bảng danh sách khách hàng */}
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
         <table className="w-full min-w-[850px] text-left text-sm">
           <thead
-            style={{ backgroundColor: NAVY, color: '#ffffff' }}
+            style={{
+              backgroundColor: NAVY,
+              color: '#ffffff',
+            }}
           >
             <tr>
               <th className="p-4">STT</th>
@@ -368,7 +402,7 @@ export default function TenantManagement({
                 <td className="p-4">{index + 1}</td>
 
                 <td className="p-4 font-medium">
-                  {tenant.full_name || 'Chưa cập nhật'}
+                  {getTenantName(tenant)}
                 </td>
 
                 <td className="p-4">
@@ -388,7 +422,9 @@ export default function TenantManagement({
                     <button
                       type="button"
                       onClick={() => openEditForm(tenant)}
-                      disabled={deletingId !== null || saving}
+                      disabled={
+                        deletingId !== null || saving
+                      }
                       className="rounded-md bg-blue-100 px-3 py-1 text-blue-700 transition hover:bg-blue-200 disabled:opacity-50"
                     >
                       Sửa
@@ -397,7 +433,9 @@ export default function TenantManagement({
                     <button
                       type="button"
                       onClick={() => void handleDelete(tenant)}
-                      disabled={deletingId !== null || saving}
+                      disabled={
+                        deletingId !== null || saving
+                      }
                       className="rounded-md bg-red-100 px-3 py-1 text-red-700 transition hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {deletingId === tenant.id
@@ -425,7 +463,7 @@ export default function TenantManagement({
         </table>
       </div>
 
-      {/* Popup thêm và sửa khách hàng */}
+      {/* Popup thêm hoặc sửa khách hàng */}
       {showForm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4"
@@ -451,9 +489,12 @@ export default function TenantManagement({
                 : 'Thêm khách hàng'}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               <div className="grid gap-4 sm:grid-cols-2">
-                {/* Họ tên */}
+                {/* Họ và tên */}
                 <label className="space-y-1">
                   <span className="block text-sm font-medium">
                     Họ và tên *
@@ -462,10 +503,14 @@ export default function TenantManagement({
                   <input
                     required
                     autoFocus
+                    type="text"
                     className={inputClass}
                     value={form.full_name ?? ''}
                     onChange={(event) =>
-                      updateField('full_name', event.target.value)
+                      updateField(
+                        'full_name',
+                        event.target.value,
+                      )
                     }
                     placeholder="Nhập họ và tên"
                   />
@@ -477,27 +522,25 @@ export default function TenantManagement({
                     Số CCCD *
                   </span>
 
-                 <input
-  required
-  type="text"
-  inputMode="numeric"
-  maxLength={12}
-  className={inputClass}
-  value={form.identity_card_number ?? ''}
-  onChange={(event) => {
-    const value = event.target.value.replace(/\D/g, '').slice(0, 12)
+                  <input
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={12}
+                    className={inputClass}
+                    value={form.identity_card_number ?? ''}
+                    onChange={(event) => {
+                      const value = event.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, 12)
 
-    updateField('identity_card_number', value)
-    setCccdReady(false)
-
-    if (value.length === 12) {
-      window.setTimeout(() => {
-        setCccdReady(true)
-      }, 500)
-    }
-  }}
-  placeholder="Nhập CCCD gồm 12 số"
-/>
+                      updateField(
+                        'identity_card_number',
+                        value,
+                      )
+                    }}
+                    placeholder="Nhập CCCD gồm 12 số"
+                  />
                 </label>
 
                 {/* Ngày sinh */}
@@ -513,7 +556,10 @@ export default function TenantManagement({
                     className={inputClass}
                     value={form.date_of_birth ?? ''}
                     onChange={(event) =>
-                      updateField('date_of_birth', event.target.value)
+                      updateField(
+                        'date_of_birth',
+                        event.target.value,
+                      )
                     }
                   />
                 </label>
@@ -539,7 +585,9 @@ export default function TenantManagement({
                       )
                     }}
                   >
-                    <option value="">-- Chọn giới tính --</option>
+                    <option value="">
+                      -- Chọn giới tính --
+                    </option>
                     <option value="NAM">Nam</option>
                     <option value="NU">Nữ</option>
                     <option value="KHAC">Khác</option>
@@ -559,7 +607,11 @@ export default function TenantManagement({
                     className={inputClass}
                     value={form.phone ?? ''}
                     onChange={(event) => {
-                      const value = event.target.value.replace(/\D/g, '')
+                      const value = event.target.value.replace(
+                        /\D/g,
+                        '',
+                      )
+
                       updateField('phone', value)
                     }}
                     placeholder="Nhập số điện thoại"
@@ -591,10 +643,14 @@ export default function TenantManagement({
 
                   <input
                     required
+                    type="text"
                     className={inputClass}
                     value={form.issue_place ?? ''}
                     onChange={(event) =>
-                      updateField('issue_place', event.target.value)
+                      updateField(
+                        'issue_place',
+                        event.target.value,
+                      )
                     }
                     placeholder="Nhập nơi cấp CCCD"
                   />
@@ -607,6 +663,7 @@ export default function TenantManagement({
                   </span>
 
                   <input
+                    type="text"
                     className={inputClass}
                     value={form.emergency_contact ?? ''}
                     onChange={(event) =>
@@ -640,7 +697,7 @@ export default function TenantManagement({
                 />
               </label>
 
-              {/* Hiển thị lỗi */}
+              {/* Thông báo lỗi */}
               {error && (
                 <p
                   className="rounded-lg bg-red-50 p-3 text-sm text-red-600"
@@ -650,7 +707,7 @@ export default function TenantManagement({
                 </p>
               )}
 
-              {/* Nút thao tác */}
+              {/* Các nút thao tác */}
               <div className="flex justify-end gap-3 border-t pt-4">
                 <button
                   type="button"
@@ -671,7 +728,7 @@ export default function TenantManagement({
                     ? 'Đang lưu...'
                     : selectedTenant
                       ? 'Cập nhật'
-                      : 'Lưu thông tin'}
+                      : 'Thêm khách hàng'}
                 </button>
               </div>
             </form>
@@ -679,5 +736,4 @@ export default function TenantManagement({
         </div>
       )}
     </div>
-  )
-}
+  )}
