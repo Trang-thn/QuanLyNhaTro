@@ -29,6 +29,7 @@ dist/
 .env.*
 !.env.example
 .codex/
+.agents/skills/
 dist/
 test*
 AGENTS.md

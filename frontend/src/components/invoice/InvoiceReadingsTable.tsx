@@ -7,7 +7,7 @@ export function InvoiceReadingsTable({ selected }: { selected: InvoiceItem }) {
   return (
     <section>
       <h4 className="font-semibold text-sm mb-2" style={{ color: INVOICE_NAVY_COLOR }}>
-        Chỉ số điện nước (tổng hợp cả tháng {selected.billing_month})
+        Chỉ số điện nước (tháng {selected.billing_month}/{selected.billing_year})
       </h4>
       <div className="border border-gray-200 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
@@ -24,14 +24,18 @@ export function InvoiceReadingsTable({ selected }: { selected: InvoiceItem }) {
               <td className="px-4 py-2.5 text-gray-500">{readings.prevElec}</td>
               <td className="px-4 py-2.5 text-gray-500">{readings.newElec}</td>
               <td className="px-4 py-2.5 font-semibold" style={{ color: INVOICE_NAVY_COLOR }}>{readings.elecKwh}</td>
-              <td className="px-4 py-2.5 font-semibold text-right" style={{ color: INVOICE_NAVY_COLOR }}>{formatVND(selected.electricity_cost)}</td>
+              <td className="px-4 py-2.5 font-semibold text-right" style={{ color: INVOICE_NAVY_COLOR }}>
+                {formatVND(selected.electricity_cost)}<div className="text-[10px] font-normal text-gray-400">× {formatVND(selected.electricity_price_per_kwh ?? 0)}/kWh</div>
+              </td>
             </tr>
             <tr className="border-t border-gray-100">
               <td className="px-4 py-2.5 text-gray-700 font-medium">Nước (m³)</td>
               <td className="px-4 py-2.5 text-gray-500">{readings.prevWater}</td>
               <td className="px-4 py-2.5 text-gray-500">{readings.newWater}</td>
               <td className="px-4 py-2.5 font-semibold" style={{ color: INVOICE_NAVY_COLOR }}>{readings.waterM3}</td>
-              <td className="px-4 py-2.5 font-semibold text-right" style={{ color: INVOICE_NAVY_COLOR }}>{formatVND(selected.water_cost)}</td>
+              <td className="px-4 py-2.5 font-semibold text-right" style={{ color: INVOICE_NAVY_COLOR }}>
+                {formatVND(selected.water_cost)}<div className="text-[10px] font-normal text-gray-400">× {formatVND(selected.water_price_per_m3 ?? 0)}/m³</div>
+              </td>
             </tr>
           </tbody>
         </table>

@@ -51,7 +51,6 @@ export class UtilityController {
         old_electricity_kwh: Number.isFinite(toNum(b.old_electricity_kwh)) ? toNum(b.old_electricity_kwh) : 0,
         old_water_m3: Number.isFinite(toNum(b.old_water_m3)) ? toNum(b.old_water_m3) : 0,
       });
-
       return res.status(201).json({
         success: true,
         message: 'Lưu chỉ số thành công',
@@ -76,8 +75,8 @@ export class UtilityController {
         return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ' });
       }
 
-      await UtilityService.updateRecord(id, newElec, newWater, req.body.recorded_date ?? null);
-      return res.json({ success: true, message: 'Cập nhật chỉ số điện/nước thành công' });
+      const period = await UtilityService.updateRecord(id, newElec, newWater, req.body.recorded_date ?? null);
+      return res.json({ success: true, message: 'Cập nhật chỉ số điện/nước thành công', period });
     } catch (error) {
       return sendError(res, error);
     }

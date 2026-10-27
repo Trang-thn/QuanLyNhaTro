@@ -23,7 +23,7 @@ export class UtilityService {
              ur.new_water_m3,
              DATE_FORMAT(ur.recorded_date, '%Y-%m-%d') AS recorded_date,
              CASE
-               WHEN EXISTS (SELECT 1 FROM invoices i WHERE i.utility_reading_id = ur.id) THEN 'DA_CO_HOA_DON'
+               WHEN EXISTS (SELECT 1 FROM invoices i WHERE i.utility_reading_id = ur.id AND i.status <> 'CHO_CHOT') THEN 'DA_CO_HOA_DON'
                WHEN ur.id IS NOT NULL THEN 'DA_NHAP'
                ELSE 'CHUA_NHAP'
              END AS current_status
@@ -51,7 +51,7 @@ export class UtilityService {
 
   static async hasInvoice(readingId: string): Promise<boolean> {
     const [rows]: any = await db.execute(
-      `SELECT id FROM invoices WHERE utility_reading_id = ? LIMIT 1`,
+      `SELECT id FROM invoices WHERE utility_reading_id = ? AND status <> 'CHO_CHOT' LIMIT 1`,
       [readingId]
     );
     return rows.length > 0;
@@ -104,9 +104,9 @@ export class UtilityService {
     }
   }
 
-  static async updateRecord(id: string, newElec: number, newWater: number, date?: string | null): Promise<void> {
+  static async updateRecord(id: string, newElec: number, newWater: number, date?: string | null): Promise<{ billing_month: number; billing_year: number }> {
     const [rows]: any = await db.execute(
-      `SELECT old_electricity_kwh, old_water_m3 FROM utility_readings WHERE id = ? LIMIT 1`,
+      `SELECT old_electricity_kwh, old_water_m3, billing_month, billing_year FROM utility_readings WHERE id = ? LIMIT 1`,
       [id]
     );
     if (!rows.length) throw httpError(404, 'Không tìm thấy bản ghi để cập nhật');
@@ -125,5 +125,6 @@ export class UtilityService {
        WHERE id = ?`,
       [newElec, newWater, date ?? null, id]
     );
+    return { billing_month: Number(rows[0].billing_month), billing_year: Number(rows[0].billing_year) };
   }
 }

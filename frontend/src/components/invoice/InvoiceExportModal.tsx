@@ -3,23 +3,21 @@ import {
   INVOICE_NAVY_COLOR,
   INVOICE_AMBER_COLOR,
   invoiceStatusConfig,
-  getInvoiceContract,
   getInvoiceReadings
 } from '../../types/invoice/invoice'
-import { getTenantName, getRoomNumber, formatVND } from '../../data/mockData'
+import { formatVND } from '../../data/mockData'
 
 export function InvoiceExportModal({ inv, onClose }: { inv: InvoiceItem; onClose: () => void }) {
-  const contract  = getInvoiceContract(inv)
-  const tenant    = contract ? getTenantName(contract.representative_tenant_id) : '—'
-  const room      = getRoomNumber(inv.room_id)
+  const tenant    = inv.tenant_name || '—'
+  const room      = inv.room_number
   const r         = getInvoiceReadings(inv)
   const remaining = inv.total_amount - inv.paid_amount
   const s         = invoiceStatusConfig[inv.status] ?? invoiceStatusConfig.CHUA_THANH_TOAN
 
   const rows = [
     { khoang: 'Tiền phòng',    chitiet: '—',                                                                             thanh: inv.room_price },
-    { khoang: 'Tiền điện',     chitiet: `${r.prevElec} đến ${r.newElec} (${r.elecKwh} kWh × 3.500 đ)`,                     thanh: inv.electricity_cost },
-    { khoang: 'Tiền nước',     chitiet: `${r.prevWater} đến ${r.newWater} (${r.waterM3} m³ × 15.000 đ)`,                   thanh: inv.water_cost },
+    { khoang: 'Tiền điện',     chitiet: `${r.prevElec} đến ${r.newElec} (${r.elecKwh} kWh × ${formatVND(inv.electricity_price_per_kwh ?? 0)}/kWh)`, thanh: inv.electricity_cost },
+    { khoang: 'Tiền nước',     chitiet: `${r.prevWater} đến ${r.newWater} (${r.waterM3} m³ × ${formatVND(inv.water_price_per_m3 ?? 0)}/m³)`, thanh: inv.water_cost },
     { khoang: 'Dịch vụ khác',  chitiet: 'Wifi, rác',                                                                     thanh: inv.other_service_cost },
   ]
 

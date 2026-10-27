@@ -40,6 +40,27 @@ Hệ thống Web Quản lý Phòng trọ nhằm tự động hóa quy trình qu�
 
 - Thêm dữ liệu mẫu seed: Trong `backend/`, chạy `npm run seed` (chỉ dùng khi chưa có dữ liệu hoặc làm mới dữ liệu về 0)
 
+### Thêm bảng giá điện nước
+
+1. Thêm đoạn tạo bảng sau vào `doc/schema.sql`:
+
+```sql
+CREATE TABLE utility_prices (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  electricity_price_per_kwh DECIMAL(12,2) NOT NULL,
+  water_price_per_m3 DECIMAL(12,2) NOT NULL,
+  effective_from DATE NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+2. Chọn database dự án trong phpMyAdmin, mở tab SQL, dán và chạy đoạn `CREATE TABLE` trên.
+3. Thêm bản ghi giá điện 4.000 VNĐ/kWh, giá nước 25.000 VNĐ/m³:
+
+```sql
+INSERT INTO utility_prices (electricity_price_per_kwh, water_price_per_m3, effective_from)
+VALUES (4000.00, 25000.00, '2026-10-01');
+```
+
 2. Sao chép `backend/.env.example` thành `backend/.env`, điền thông tin MySQL và JWT secret.
 3. Trong `backend/`, chạy `npm install`, rồi `npm run dev` (mặc định cổng 3000).
 4. Sao chép `frontend/.env.example` thành `frontend/.env`.
@@ -49,7 +70,7 @@ Hệ thống Web Quản lý Phòng trọ nhằm tự động hóa quy trình qu�
 
 - 'frontend':
   npm install
--  `npm install @tailwindcss/vite tailwindcss`
+- `npm install @tailwindcss/vite tailwindcss`
   `npm run dev`
 - 'backend':
   `npm install`
