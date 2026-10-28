@@ -1,34 +1,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
+
 import ContractManagement from '../components/contract/ContractManagement'
 import ApiState from '../components/common/ApiState'
 import { getContracts } from '../services/contractService'
-import type { Contract as ServiceContract } from '../services/contractService'
+
 import type { Contract } from '../types/contract'
 
-function mapContract(contract: ServiceContract): Contract {
-  return {
-    ...contract,
-    id: String(contract.id),
-    contract_number: contract.code,
-    room_id: String(contract.room_id),
-    representative_tenant_id: String(contract.tenant_id),
-    room_number: contract.room_name ?? String(contract.room_id),
-   status:
-  contract.status === 'Đã thanh lý'
-    ? 'DA_THANH_LY'
-    : contract.status === 'Sắp hết hạn'
-      ? 'HIEU_LUC'
-      : contract.status === 'Đang thuê'
-        ? 'HIEU_LUC'
-        : 'KHONG_HIEU_LUC',
-    start_date: contract.start_date,
-    end_date: contract.end_date,
-    rental_price: contract.rental_price,
-    deposit_amount: contract.deposit_amount,
-    billing_cycle_day: contract.billing_cycle_day ?? 1,
-  }
-}
+
 
 export default function ContractPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -39,16 +18,17 @@ export default function ContractPage() {
   useEffect(() => {
     let active = true
 
-    setLoading(true)
-    setError(null)
+    async function loadContracts() {
+      setLoading(true)
+      setError(null)
 
-    getContracts()
-      .then((result) => {
+      try {
+        const result = await getContracts()
+
         if (active) {
-          setContracts(result.map(mapContract))
+          setContracts(result)
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (active) {
           setError(
             err instanceof Error
@@ -56,12 +36,14 @@ export default function ContractPage() {
               : 'Không thể tải danh sách hợp đồng.',
           )
         }
-      })
-      .finally(() => {
+      } finally {
         if (active) {
           setLoading(false)
         }
-      })
+      }
+    }
+
+    void loadContracts()
 
     return () => {
       active = false
@@ -73,8 +55,15 @@ export default function ContractPage() {
   }, [])
 
   return (
-    <ApiState loading={loading} error={error} onRetry={retry}>
-      <ContractManagement contracts={contracts} onReload={retry} />
+    <ApiState
+      loading={loading}
+      error={error}
+      onRetry={retry}
+    >
+      <ContractManagement
+        contracts={contracts}
+        onReload={retry}
+      />
     </ApiState>
   )
 }

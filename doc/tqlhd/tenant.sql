@@ -6,3 +6,9 @@ ALTER TABLE tenants
     ADD COLUMN email VARCHAR(255) NULL,
     ADD COLUMN gender VARCHAR(10) NULL,
     ADD COLUMN avatar VARCHAR(500) NULL;
+   //Thêm cột ngày thực hiện hàng tháng cho bảng contracts
+    USE quanlynhatro;
+
+-- Thêm cột mới trước, chưa xóa cột cũ.
+ALTER TABLE contracts
+ADD COLUMN billing_cycle_at DATETIME NULL;

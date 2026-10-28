@@ -1,138 +1,136 @@
 
 import { apiRequest } from './api'
 
-export type ContractStatus =
-  | 'Đang thuê'
-  | 'Sắp hết hạn'
-  | 'Đã thanh lý'
+import type {
+  Contract,
+  ContractStatus,
+  CreateContractRequest,
+  UpdateContractRequest,
+} from '../types/contract'
 
-type NumericValue = number | string | null
+export type { Contract, ContractStatus } from '../types/contract'
 
-export interface Contract {
-  // ID hợp đồng là chuỗi
-  id: string
+type NumericValue = number | string | null | undefined
 
-  code: string
-  tenant_id: number
-  tenant_name?: string
-  room_id: number
-  room_name?: string
+interface ContractApiResponse {
+  id: string | number
+  contract_number: string
+
+  room_id: string | number
+  representative_tenant_id: string | number
+
+  room_number?: string | null
+  tenant_name?: string | null
+  phone?: string | null
+  tenant_phone?: string | null
+  email?: string | null
+
   start_date: string
   end_date: string
-  rental_price: number
-  deposit_amount: number
+
+  rental_price: NumericValue
+  deposit_amount: NumericValue
+
   status: ContractStatus
-  billing_cycle_day?: number
-  note?: string | null
+  billing_cycle_date: string
+
   created_at?: string
   updated_at?: string
 }
 
-export interface ContractInput {
-  tenant_id: number
-  room_id: number
-  start_date: string
-  end_date: string
-  rental_price: number
-  deposit_amount: number
-  billing_cycle_day?: number
-  note?: string
+interface CreateContractResponse {
+  message: string
+  id: string | number
 }
 
-interface ContractResponse
-  extends Omit<Contract, 'rental_price' | 'deposit_amount'> {
-  rental_price: NumericValue
-  deposit_amount: NumericValue
+interface MessageResponse {
+  message: string
 }
 
-/**
- * Chuyển giá trị tiền thành number.
- */
 function toNumber(value: NumericValue): number {
-  const parsed = Number(value ?? 0)
-  return Number.isFinite(parsed) ? parsed : 0
+  const number = Number(value ?? 0)
+  return Number.isFinite(number) ? number : 0
 }
 
-/**
- * Chuẩn hóa dữ liệu hợp đồng từ API.
- */
-function normalizeContract(contract: ContractResponse): Contract {
+function normalizeContract(data: ContractApiResponse): Contract {
   return {
-    ...contract,
-    id: String(contract.id),
-    rental_price: toNumber(contract.rental_price),
-    deposit_amount: toNumber(contract.deposit_amount),
+    ...data,
+    id: String(data.id),
+    room_id: String(data.room_id),
+    representative_tenant_id: String(
+      data.representative_tenant_id,
+    ),
+    room_number: data.room_number ?? null,
+    tenant_name: data.tenant_name ?? null,
+    phone: data.phone ?? data.tenant_phone ?? null,
+    tenant_phone: data.tenant_phone ?? data.phone ?? null,
+    rental_price: toNumber(data.rental_price),
+    deposit_amount: toNumber(data.deposit_amount),
   }
 }
 
-/**
- * Lấy danh sách hợp đồng.
- */
+// Lấy danh sách hợp đồng
 export async function getContracts(): Promise<Contract[]> {
-  const response = await apiRequest<ContractResponse[]>('/contracts')
+  const response = await apiRequest<ContractApiResponse[]>(
+    '/contracts',
+  )
 
   return response.map(normalizeContract)
 }
 
-/**
- * Lấy thông tin hợp đồng theo ID chuỗi.
- */
+// Lấy chi tiết một hợp đồng
 export async function getContractById(
   id: string,
 ): Promise<Contract> {
-  const response = await apiRequest<ContractResponse>(
+  const response = await apiRequest<ContractApiResponse>(
     `/contracts/${encodeURIComponent(id)}`,
   )
 
   return normalizeContract(response)
 }
 
-/**
- * Thêm hợp đồng mới.
- */
+// Tạo hợp đồng mới
+// Backend trả về { message, id }, không phải toàn bộ hợp đồng.
 export async function createContract(
-  input: ContractInput,
-): Promise<Contract> {
-  const response = await apiRequest<ContractResponse>('/contracts', {
+  input: CreateContractRequest,
+): Promise<CreateContractResponse> {
+  return apiRequest<CreateContractResponse>('/contracts', {
     method: 'POST',
     body: JSON.stringify(input),
-  })
+  })}
 
-  return normalizeContract(response)
-}
-
-/**
- * Cập nhật hợp đồng theo ID chuỗi.
- */
+// Cập nhật hợp đồng
+// Backend sử dụng PATCH và chỉ trả về { message }.
 export async function updateContract(
   id: string,
-  input: Partial<ContractInput>,
-): Promise<Contract> {
-  const response = await apiRequest<ContractResponse>(
+  input: UpdateContractRequest,
+): Promise<MessageResponse> {
+  return apiRequest<MessageResponse>(
     `/contracts/${encodeURIComponent(id)}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(input),
     },
-  )
+  )}
 
-  return normalizeContract(response)
-}
-
-/**
- * Thanh lý hợp đồng theo ID chuỗi.
- */
+// Thanh lý hợp đồng thông qua PATCH trạng thái.
+// Backend hiện chưa có route riêng /liquidate.
 export async function liquidateContract(
   id: string,
-  note?: string,
-): Promise<Contract> {
-  const response = await apiRequest<ContractResponse>(
-    `/contracts/${encodeURIComponent(id)}/liquidate`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ note }),
-    },
-  )
-
-  return normalizeContract(response)
+  _note?: string,
+): Promise<MessageResponse> {
+  return updateContract(id, {
+    status: 'DA_THANH_LY',
+  })
 }
+
+// Xóa hợp đồng
+export async function deleteContract(
+  id: string,
+): Promise<MessageResponse> {
+  return apiRequest<MessageResponse>(
+    `/contracts/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+    },
+  )}
