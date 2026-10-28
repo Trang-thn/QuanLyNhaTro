@@ -1,42 +1,48 @@
 
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import TenantPage from './pages/TenantPage'
 import ContractPage from './pages/ContractPage'
-//import TenantContractPage from './pages/TenantContractPage'
 import Rooms from './pages/rooms/RoomPage'
-
-// Temporarily disabled while the tenant module is unavailable. Restore this import and its nav/render references when the owner module is integrated.
-// import Tenants from './pages/Tenants'
-
-// Temporarily disabled while these owner modules are unavailable. Restore each import and its nav/render references when integrated.
-// import Contracts from './pages/Contracts'
-// import Invoices from './pages/Invoices'
-
 import Maintenance from './pages/issues/IssuesPage'
 import Notifications from './pages/notifications/NotificationPage'
-// import Utilities from './pages/Utilities'
 import Settings from './pages/Settings'
+import Utilities from './pages/Utilities/Utilities'
+import Invoices from './pages/invoice/Invoices'
 import TenantRegistrationQueue from './pages/TenantRegistrationQueue'
 import TenantApp from './TenantApp'
-import { apiRequest, clearAuthToken, getAuthToken } from './services/api'
+
+import {
+  apiRequest,
+  clearAuthToken,
+  getAuthToken,
+} from './services/api'
 
 type Page =
   | 'dashboard'
-  | 'settings'
-  | 'tenant-registrations'
   | 'rooms'
-  | 'maintenance'
-  | 'notifications'
   | 'tenants'
   | 'contracts'
-  | 'tenant-contract'
+  | 'invoices'
+  | 'utilities'
+  | 'maintenance'
+  | 'notifications'
+  | 'settings'
+  | 'tenant-registrations'
+
+type NavItem = {
+  id: Page
+  label: string
+  icon: ReactNode
+}
 
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
 
-const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
+const navItems: NavItem[] = [
   {
     id: 'dashboard',
     label: 'Tổng quan',
@@ -65,37 +71,62 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
-
-  /* Temporarily disabled tenant-owned navigation; restore with its page component.
   {
-    id: 'tenants', label: 'Khách thuê',
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>,
-  },
-  */
-
-  /* Temporarily disabled owner modules; restore these navigation entries with their page components.
-  {
-    id: 'contracts', label: 'Hợp đồng',
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>,
+    id: 'tenants',
+    label: 'Khách thuê',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.8}
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    ),
   },
   {
-    id: 'invoices', label: 'Hóa đơn',
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-    </svg>,
+    id: 'contracts',
+    label: 'Hợp đồng',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.8}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    ),
   },
   {
-    id: 'utilities', label: 'Điện nước',
-    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>,
+    id: 'invoices',
+    label: 'Hóa đơn',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.8}
+          d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5-2 3.5 2z"
+        />
+      </svg>
+    ),
   },
-  */
-
+  {
+    id: 'utilities',
+    label: 'Điện nước',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.8}
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+        />
+      </svg>
+    ),
+  },
   {
     id: 'maintenance',
     label: 'Sự cố',
@@ -133,7 +164,7 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.8}
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543-.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
         />
         <path
           strokeLinecap="round"
@@ -158,50 +189,19 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
-
-  // Phần bổ sung: quản lý khách thuê
-  {
-    id: 'tenants',
-    label: 'Khách thuê',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.8}
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
-    ),
-  },
-
-  // Phần bổ sung: quản lý hợp đồng
-  {
-    id: 'contracts',
-    label: 'Hợp đồng',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.8}
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-    ),
-  },
 ]
 
 const pageTitles: Record<Page, string> = {
   dashboard: 'Tổng quan',
-  settings: 'Cài đặt',
-  'tenant-registrations': 'Yêu cầu đăng ký Tenant',
-  rooms: 'Phòng',
-  maintenance: 'Sự cố',
-  notifications: 'Thông báo',
+  rooms: 'Phòng trọ',
   tenants: 'Quản lý khách thuê',
   contracts: 'Quản lý hợp đồng',
-  'tenant-contract': 'Hồ sơ và hợp đồng khách thuê',
+  invoices: 'Hóa đơn',
+  utilities: 'Điện nước',
+  maintenance: 'Sự cố',
+  notifications: 'Thông báo',
+  settings: 'Cài đặt',
+  'tenant-registrations': 'Yêu cầu đăng ký Tenant',
 }
 
 function LogoutModal({
@@ -218,7 +218,7 @@ function LogoutModal({
       onClick={onCancel}
     >
       <div
-        className="bg-white flex flex-col gap-6 items-center p-8 rounded-2xl shadow-2xl w-[420px]"
+        className="bg-white flex flex-col gap-6 items-center p-8 rounded-2xl shadow-2xl w-[420px] max-w-[calc(100vw-32px)]"
         style={{ boxShadow: '0px 8px 12px rgba(23,43,77,0.12)' }}
         onClick={e => e.stopPropagation()}
       >
@@ -274,16 +274,15 @@ function ExportReportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
       style={{ background: 'rgba(11,11,12,0.6)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white flex flex-col gap-6 items-start p-8 rounded-2xl w-[640px]"
+        className="bg-white flex flex-col gap-6 items-start p-8 rounded-2xl w-[640px] max-w-full max-h-[90vh] overflow-y-auto"
         style={{ boxShadow: '0px 8px 12px rgba(23,43,77,0.12)' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between w-full">
           <p className="font-bold text-[18px] text-[#172b4d]">
             Xuất báo cáo thống kê
@@ -292,12 +291,12 @@ function ExportReportModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-gray-100 transition"
+            aria-label="Đóng"
           >
-            <img src="/assets/29214.svg" alt="close" className="w-3.5 h-3.5" />
+            <img src="/assets/29214.svg" alt="" className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Report type */}
         <div className="flex flex-col gap-3 w-full">
           <p className="text-[13px] font-semibold text-[#1f2937]">
             Loại báo cáo muốn xuất
@@ -305,70 +304,52 @@ function ExportReportModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex flex-col gap-2.5">
             {reportTypes.map((label, i) => (
-              <label key={i} className="flex items-center gap-3 cursor-pointer">
-                <div
-                  className="shrink-0 w-5 h-5 rounded-full border-2 cursor-pointer flex items-center justify-center transition"
-                  style={{
-                    borderColor: reportType === i ? AMBER : '#e5e7eb',
-                    borderWidth: reportType === i ? 6 : 2,
-                    background: 'white',
-                  }}
-                  onClick={() => setReportType(i)}
+              <label key={label} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="reportType"
+                  checked={reportType === i}
+                  onChange={() => setReportType(i)}
+                  className="accent-amber-500"
                 />
-
-                <span
-                  className="text-[14px] cursor-pointer"
-                  style={{
-                    fontWeight: reportType === i ? 600 : 400,
-                    color: '#1f2937',
-                  }}
-                  onClick={() => setReportType(i)}
-                >
-                  {label}
-                </span>
+                <span className="text-[14px] text-[#1f2937]">{label}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {/* Date range */}
-        <div className="flex gap-4 w-full">
+        <div className="flex flex-col sm:flex-row gap-4 w-full">
           <div className="flex flex-col gap-1.5 flex-1">
-            <p className="text-[13px] font-semibold text-[#1f2937]">Từ ngày</p>
-
-            <div className="flex items-center gap-2 border border-[#e5e7eb] rounded-lg h-10 px-3">
-              <input
-                type="text"
-                value={fromDate}
-                onChange={e => setFromDate(e.target.value)}
-                className="flex-1 text-[14px] text-[#1f2937] outline-none bg-transparent"
-              />
-              <img src="/assets/f9c59.svg" alt="" className="w-4 h-4 shrink-0" />
-            </div>
+            <label className="text-[13px] font-semibold text-[#1f2937]">
+              Từ ngày
+            </label>
+            <input
+              type="text"
+              value={fromDate}
+              onChange={e => setFromDate(e.target.value)}
+              className="border border-[#e5e7eb] rounded-lg h-10 px-3 text-[14px] text-[#1f2937] outline-none"
+            />
           </div>
 
           <div className="flex flex-col gap-1.5 flex-1">
-            <p className="text-[13px] font-semibold text-[#1f2937]">Đến ngày</p>
-
-            <div className="flex items-center gap-2 border border-[#e5e7eb] rounded-lg h-10 px-3">
-              <input
-                type="text"
-                value={toDate}
-                onChange={e => setToDate(e.target.value)}
-                className="flex-1 text-[14px] text-[#1f2937] outline-none bg-transparent"
-              />
-              <img src="/assets/f9c59.svg" alt="" className="w-4 h-4 shrink-0" />
-            </div>
+            <label className="text-[13px] font-semibold text-[#1f2937]">
+              Đến ngày
+            </label>
+            <input
+              type="text"
+              value={toDate}
+              onChange={e => setToDate(e.target.value)}
+              className="border border-[#e5e7eb] rounded-lg h-10 px-3 text-[14px] text-[#1f2937] outline-none"
+            />
           </div>
         </div>
 
-        {/* File format */}
         <div className="flex flex-col gap-2 w-full">
           <p className="text-[13px] font-semibold text-[#1f2937]">
             Định dạng file xuất
           </p>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setFileFormat('excel')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
@@ -397,8 +378,7 @@ function ExportReportModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 justify-end w-full">
+        <div className="flex flex-wrap gap-3 justify-end w-full">
           <button
             onClick={onClose}
             className="px-4 py-2.5 rounded-lg border border-[#e5e7eb] text-sm font-semibold text-[#4b5563] hover:bg-gray-50 transition"
@@ -428,21 +408,20 @@ function Sidebar({
   onToggle,
 }: {
   currentPage: Page
-  onNavigate: (p: Page) => void
+  onNavigate: (page: Page) => void
   onLogoutClick: () => void
   collapsed: boolean
   onToggle: () => void
 }) {
   return (
-    <div
-      className="flex flex-col h-full transition-all duration-300 shrink-0"
+    <aside
+      className="relative flex flex-col h-full transition-all duration-300 shrink-0"
       style={{
         background: NAVY,
         width: collapsed ? 64 : 240,
         minWidth: collapsed ? 64 : 240,
       }}
     >
-      {/* Logo */}
       <div
         className="flex items-center justify-between px-4 py-5 border-b"
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
@@ -480,45 +459,33 @@ function Sidebar({
           </div>
         )}
 
-        {!collapsed && (
-          <button
-            onClick={onToggle}
-            className="transition p-1 rounded ml-1"
-            style={{ color: 'rgba(255,255,255,0.45)' }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button
+          onClick={onToggle}
+          className="transition p-1 rounded ml-1"
+          style={{ color: 'rgba(255,255,255,0.6)' }}
+          title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+          aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {collapsed ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 5l7 7-7 7M5 5l7-7"
+              />
+            ) : (
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
               />
-            </svg>
-          </button>
-        )}
-
-        {collapsed && (
-          <button
-            onClick={onToggle}
-            className="transition p-1 rounded absolute left-14 top-4 rounded-full z-10"
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.6)',
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        )}
+            )}
+          </svg>
+        </button>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {navItems.map(item => {
           const isActive = currentPage === item.id
@@ -532,19 +499,20 @@ function Sidebar({
               style={{
                 width: 'calc(100% - 24px)',
                 background: isActive ? AMBER : 'transparent',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
               }}
               onMouseEnter={e => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                if (!isActive) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                }
               }}
               onMouseLeave={e => {
-                if (!isActive) e.currentTarget.style.background = 'transparent'
+                if (!isActive) {
+                  e.currentTarget.style.background = 'transparent'
+                }
               }}
             >
-              <span
-                className="shrink-0 transition"
-                style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.5)' }}
-              >
+              <span className="shrink-0" style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.6)' }}>
                 {item.icon}
               </span>
 
@@ -558,7 +526,6 @@ function Sidebar({
         })}
       </nav>
 
-      {/* Bottom: user + logout */}
       <div className="border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         {!collapsed && (
           <div className="px-4 py-3 flex items-center gap-3">
@@ -582,12 +549,12 @@ function Sidebar({
           onClick={onLogoutClick}
           title="Đăng xuất"
           className="w-full flex items-center gap-3 px-4 py-3 transition"
-          style={{ color: 'rgba(255,255,255,0.45)' }}
+          style={{ color: 'rgba(255,255,255,0.55)' }}
           onMouseEnter={e => {
             e.currentTarget.style.color = '#f87171'
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.45)'
+            e.currentTarget.style.color = 'rgba(255,255,255,0.55)'
           }}
         >
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -602,7 +569,7 @@ function Sidebar({
           {!collapsed && <span className="text-sm">Đăng xuất</span>}
         </button>
       </div>
-    </div>
+    </aside>
   )
 }
 
@@ -687,11 +654,10 @@ export default function App() {
         onNavigate={setCurrentPage}
         onLogoutClick={() => setShowLogoutModal(true)}
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(p => !p)}
+        onToggle={() => setSidebarCollapsed(previous => !previous)}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Top bar */}
         <header
           className="bg-white border-b border-gray-100 px-6 py-0 flex items-center justify-between shrink-0"
           style={{ height: 60 }}
@@ -705,7 +671,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Export report button */}
             <button
               onClick={() => setShowExportModal(true)}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition"
@@ -722,7 +687,6 @@ export default function App() {
               Xuất báo cáo
             </button>
 
-            {/* User avatar */}
             <div
               className="flex items-center gap-2 pl-3 border-l border-gray-200 cursor-pointer"
               onClick={() => setCurrentPage('settings')}
@@ -744,23 +708,18 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard' && <Dashboard />}
 
           {currentPage === 'rooms' && <Rooms />}
 
-          {/* Phần bổ sung: quản lý hồ sơ khách thuê phía Admin */}
           {currentPage === 'tenants' && <TenantPage />}
 
-          {/* Phần bổ sung: quản lý hợp đồng phía Admin */}
           {currentPage === 'contracts' && <ContractPage />}
 
-          {/* Restore tenant/contract/invoice/utilities render branches with their owner modules. */}
-          {/* {currentPage === 'tenants'        && <Tenants />}
-          {currentPage === 'contracts'      && <Contracts />}
-          {currentPage === 'invoices'       && <Invoices />}
-          {currentPage === 'utilities'      && <Utilities />} */}
+          {currentPage === 'invoices' && <Invoices />}
+
+          {currentPage === 'utilities' && <Utilities />}
 
           {currentPage === 'maintenance' && <Maintenance />}
 
@@ -772,7 +731,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* Logout confirmation modal */}
       {showLogoutModal && (
         <LogoutModal
           onConfirm={() => {
@@ -784,7 +742,6 @@ export default function App() {
         />
       )}
 
-      {/* Export report modal */}
       {showExportModal && (
         <ExportReportModal onClose={() => setShowExportModal(false)} />
       )}

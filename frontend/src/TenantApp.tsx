@@ -41,7 +41,6 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
     </svg>,
   },
-
   {
     id: 'incidents', label: 'Báo cáo sự cố',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
@@ -190,9 +189,8 @@ export default function TenantApp({ onLogout }: Props) {
           {currentPage === 'profile' && <TenantProfile />}
           {/* Restore these branches with the tenant-owned page modules. */}
           {/* {currentPage === 'contracts' && <TenantContracts />}
-          {/*currentPage === 'invoices'  && <Invoices />} */}
+          {currentPage === 'invoices'  && <Invoices />} */}
           {currentPage === 'incidents' && <Maintenance />}
-          {currentPage === 'contracts' && <TenantContractPage />}
           {currentPage === 'notifications' && <Notifications />}
           {currentPage === 'settings' && <Settings role="tenant" />}
 

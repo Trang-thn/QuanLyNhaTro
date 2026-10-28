@@ -61,6 +61,7 @@ async function clearExistingData(connection) {
     'tenant_registration_requests',
     'payments',
     'invoices',
+    'utility_prices',
     'utility_readings',
     'maintenance_requests',
     'notification_recipients',
@@ -82,6 +83,9 @@ async function clearExistingData(connection) {
 
 async function seedData(connection) {
   const passwordHash = await bcrypt.hash('123456', 12);
+  await insertMany(connection, 'utility_prices', [
+    'electricity_price_per_kwh', 'water_price_per_m3', 'effective_from',
+  ], [[4000, 25000, '2026-10-01']]);
   const users = {
     admin: randomUUID(),
     tenant1: randomUUID(),
