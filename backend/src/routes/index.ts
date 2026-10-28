@@ -1,5 +1,4 @@
-
-import { Router } from 'express';
+ import { Router } from 'express';
 import utilityRoutes from './Utility_Router';
 import { roomsRouter } from './rooms';
 import { authRouter } from './auth';
