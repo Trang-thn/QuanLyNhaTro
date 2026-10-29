@@ -32,7 +32,7 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 
 export async function changePassword(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.user) throw new HttpError(401, 'Unauthorized');
+    if (!req.user) throw new HttpError(401, 'Vui lòng đăng nhập');
     await changeUserPassword(req.user.id, req.body);
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {

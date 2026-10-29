@@ -1,11 +1,38 @@
 {
-  "name": "quan-ly-nha-tro-root",
+  "name": "quan-ly-nha-tro",
   "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev": "concurrently -k -p \"[{name}]\" -c \"blue.bold,green.bold\" -n \"BACKEND,FRONTEND\" \"npm run dev:backend\" \"npm run dev:frontend\""
+  "description": "Hệ thống quản lý nhà trọ - Module Khách thuê & Hợp đồng",
+  "main": "app.js",
+  
+"scripts": {
+  "start": "node app.js",
+  "dev": "concurrently -k -n BACKEND,FRONTEND -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+  "test": "jest",
+  "db:migrate": "node migrations/run.js",
+  "db:seed": "node seeds/run.js"
+},
+
+  "keywords": [
+    "nodejs",
+    "express",
+    "mysql",
+    "tenant",
+    "contract",
+    "room-rental"
+  ],
+  "author": "Ngọc - Dev Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.6.5",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

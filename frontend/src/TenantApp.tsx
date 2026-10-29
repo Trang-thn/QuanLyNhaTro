@@ -8,6 +8,7 @@ import Invoices from './pages/Invoices'
 import Maintenance from './pages/issues/TenantIncidentsPage'
 import Notifications from './pages/notifications/TenantNotificationsPage'
 import Settings from './pages/Settings'
+import TenantContractPage from './pages/TenantContractPage'
 
 type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'notifications' | 'contracts' | 'invoices'
 
@@ -27,7 +28,7 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
     </svg>,
   },
-  /* Temporarily unavailable tenant-owned pages; restore these navigation entries with their implementations.
+  /* Temporarily unavailable tenant-owned pages; restore these navigation entries with their implementations*/
   {
     id: 'contracts', label: 'Hợp đồng của tôi',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
@@ -40,7 +41,6 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
     </svg>,
   },
-  */
   {
     id: 'incidents', label: 'Báo cáo sự cố',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
