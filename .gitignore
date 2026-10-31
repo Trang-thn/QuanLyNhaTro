@@ -29,8 +29,13 @@ dist/
 .env.*
 !.env.example
 .codex/
+.agents/skills/
 dist/
 test*
 AGENTS.md
 graphify-out
 trang/
+/playwright-report/
+/node_modules/
+/test-results/
+/frontend/tsconfig.tsbuildinfo

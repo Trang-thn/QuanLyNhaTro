@@ -71,6 +71,13 @@ CREATE TABLE utility_readings (
   CONSTRAINT uq_room_billing_period UNIQUE (room_id, billing_month, billing_year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE utility_prices (
+  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  electricity_price_per_kwh DECIMAL(12,2) NOT NULL,
+  water_price_per_m3 DECIMAL(12,2) NOT NULL,
+  effective_from DATE NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE invoices (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), invoice_code VARCHAR(50) UNIQUE NOT NULL,
   contract_id VARCHAR(36), utility_reading_id VARCHAR(36), billing_month INT NOT NULL, billing_year INT NOT NULL,
@@ -78,7 +85,8 @@ CREATE TABLE invoices (
   other_service_cost DECIMAL(12,2) DEFAULT 0, total_amount DECIMAL(12,2) NOT NULL, paid_amount DECIMAL(12,2) DEFAULT 0,
   status VARCHAR(20) DEFAULT 'CHUA_THANH_TOAN', due_date DATE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_invoices_contracts FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_invoices_readings FOREIGN KEY (utility_reading_id) REFERENCES utility_readings(id) ON DELETE SET NULL
+  CONSTRAINT fk_invoices_readings FOREIGN KEY (utility_reading_id) REFERENCES utility_readings(id) ON DELETE SET NULL,
+  CONSTRAINT uq_invoice_contract_period UNIQUE (contract_id, billing_month, billing_year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE payments (
@@ -97,10 +105,23 @@ CREATE TABLE maintenance_requests (
 
 CREATE TABLE notifications (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title VARCHAR(200) NOT NULL, content TEXT NOT NULL,
-  sender_id VARCHAR(36), receiver_id VARCHAR(36), is_read BOOLEAN DEFAULT FALSE,
+  sender_id VARCHAR(36), receiver_id VARCHAR(36),
+  audience_type ENUM('ALL', 'ROOM', 'TENANT') NOT NULL DEFAULT 'TENANT', room_id VARCHAR(36),
+  is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_notif_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notif_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+  INDEX idx_notifications_sender_created (sender_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE notification_recipients (
+  notification_id VARCHAR(36) NOT NULL, user_id VARCHAR(36) NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (notification_id, user_id),
+  INDEX idx_notification_recipients_user_created (user_id, created_at),
+  CONSTRAINT fk_notification_recipients_notification FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notification_recipients_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Password reset OTP storage (approved option B; one active code per account)

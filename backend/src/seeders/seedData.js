@@ -61,8 +61,10 @@ async function clearExistingData(connection) {
     'tenant_registration_requests',
     'payments',
     'invoices',
+    'utility_prices',
     'utility_readings',
     'maintenance_requests',
+    'notification_recipients',
     'notifications',
     'contract_members',
     'contracts',
@@ -81,6 +83,9 @@ async function clearExistingData(connection) {
 
 async function seedData(connection) {
   const passwordHash = await bcrypt.hash('123456', 12);
+  await insertMany(connection, 'utility_prices', [
+    'electricity_price_per_kwh', 'water_price_per_m3', 'effective_from',
+  ], [[4000, 25000, '2026-10-01']]);
   const users = {
     admin: randomUUID(),
     tenant1: randomUUID(),
@@ -268,11 +273,19 @@ async function seedData(connection) {
     [randomUUID(), rooms.p101, tenants.tenant1, 'Thay bóng đèn', 'Bóng đèn khu vực bếp cần được thay mới.', 'HOAN_THANH', 120000],
   ]);
 
+  const notificationPaymentId = randomUUID();
+  const notificationWelcomeId = randomUUID();
   await insertMany(connection, 'notifications', [
     'id', 'title', 'content', 'sender_id', 'receiver_id', 'is_read',
   ], [
-    [randomUUID(), 'Thông báo thanh toán tiền phòng', 'Hóa đơn tiền phòng tháng này đã được tạo.', users.admin, users.tenant1, 0],
-    [randomUUID(), 'Chào mừng khách thuê', 'Hồ sơ thuê phòng của bạn đã được tạo.', users.admin, users.tenant2, 1],
+    [notificationPaymentId, 'Thông báo thanh toán tiền phòng', 'Hóa đơn tiền phòng tháng này đã được tạo.', users.admin, users.tenant1, 0],
+    [notificationWelcomeId, 'Chào mừng khách thuê', 'Hồ sơ thuê phòng của bạn đã được tạo.', users.admin, users.tenant2, 1],
+  ]);
+  await insertMany(connection, 'notification_recipients', [
+    'notification_id', 'user_id', 'is_read',
+  ], [
+    [notificationPaymentId, users.tenant1, 0],
+    [notificationWelcomeId, users.tenant2, 1],
   ]);
 }
 
