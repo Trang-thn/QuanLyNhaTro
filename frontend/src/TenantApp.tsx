@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import TenantDashboard from './pages/TenantDashboard'
 import TenantProfile from './pages/TenantProfile'
+import TenantInvoices from './pages/tenantInvoice/TenantInvoices'
 /* Temporarily unavailable tenant-owned pages. Restore imports, navigation, and render branches when those modules are integrated.
 import TenantContracts from './pages/TenantContracts'
 import Invoices from './pages/Invoices'
@@ -25,6 +26,12 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
     id: 'profile', label: 'Hồ sơ & Phòng ở',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>,
+  },
+  {
+    id: 'invoices', label: 'Hóa đơn & Thanh toán',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
     </svg>,
   },
   /* Temporarily unavailable tenant-owned pages; restore these navigation entries with their implementations.
@@ -187,6 +194,7 @@ export default function TenantApp({ onLogout }: Props) {
         <main className="flex-1 overflow-auto p-6">
           {currentPage === 'dashboard' && <TenantDashboard />}
           {currentPage === 'profile' && <TenantProfile />}
+          {currentPage === 'invoices' && <TenantInvoices />}
           {/* Restore these branches with the tenant-owned page modules. */}
           {/* {currentPage === 'contracts' && <TenantContracts />}
           {currentPage === 'invoices'  && <Invoices />} */}
