@@ -223,13 +223,6 @@ function LogoutModal({
         style={{ boxShadow: '0px 8px 12px rgba(23,43,77,0.12)' }}
         onClick={e => e.stopPropagation()}
       >
-        <div
-          className="flex items-center justify-center rounded-[20px] w-10 h-10"
-          style={{ background: '#ffedec' }}
-        >
-          <img src="/assets/12139.svg" alt="" className="w-5 h-5" />
-        </div>
-
         <div className="text-center">
           <p className="font-bold text-[18px] text-[#172b4d] mb-2">
             Xác nhận đăng xuất
