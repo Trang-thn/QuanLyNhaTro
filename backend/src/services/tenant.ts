@@ -30,13 +30,14 @@ export async function getTenantDashboardData(userId: string) {
   const [contracts] = await pool.query<RowDataPacket[]>(
     `SELECT c.*
      FROM contracts c
-     WHERE c.representative_tenant_id = ?
+     WHERE c.status = 'HIEU_LUC' AND CURRENT_DATE BETWEEN c.start_date AND c.end_date
+       AND (c.representative_tenant_id = ?
         OR EXISTS (
           SELECT 1
           FROM contract_members cm
           WHERE cm.contract_id = c.id
             AND cm.tenant_id = ?
-        )
+        ))
      ORDER BY c.start_date DESC`,
     [tenantId, tenantId],
   );
@@ -45,13 +46,14 @@ export async function getTenantDashboardData(userId: string) {
     `SELECT i.*, c.room_id
      FROM invoices i
      JOIN contracts c ON c.id = i.contract_id
-     WHERE c.representative_tenant_id = ?
+     WHERE (c.representative_tenant_id = ?
         OR EXISTS (
           SELECT 1
           FROM contract_members cm
           WHERE cm.contract_id = c.id
             AND cm.tenant_id = ?
-        )
+        ))
+       AND i.status <> 'CHO_CHOT'
      ORDER BY i.billing_year DESC, i.billing_month DESC`,
     [tenantId, tenantId],
   );
