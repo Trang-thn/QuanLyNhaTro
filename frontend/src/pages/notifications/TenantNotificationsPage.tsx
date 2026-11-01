@@ -78,7 +78,7 @@ export default function TenantNotificationsPage() {
                 {!item.isRead && <img src="/assets/tenant-notification-unread.svg" alt="" width="7" height="7" className="absolute right-5 top-5" />}
               </button>)}
           </div> : <div className="mt-6 flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-[#e5e7eb] bg-white p-10 text-center">
-            <img src="/assets/tenant-notification-empty.svg" alt="" width="72" height="72" />
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0H9m6 0v1a3 3 0 11-6 0v-1" /></svg>
             <p className="mt-5 font-['Inter:Extra_Bold'] text-lg font-extrabold text-[#1f2937]">Chưa có thông báo</p>
             <p className="mt-3 text-sm text-[#4f5e74]">Hiện tại chưa có thông báo mới.</p>
           </div>
