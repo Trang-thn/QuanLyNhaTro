@@ -20,6 +20,7 @@ export interface TenantRentalContract {
   contract_number: string
   room_id: string
   room_number?: string
+  representative_name?: string | null
   start_date: string
   end_date: string
   rental_price: number

@@ -6,10 +6,26 @@ import { CurrentUserProfile } from '../types/users';
 import { HttpError } from '../utils/httpError';
 
 interface AccountRow extends RowDataPacket {
-  id: string; username: string; fullName: string; email: string | null;
-  phoneNumber: string | null; role: AuthUser['role']; tenantId: string | null;
-  identityCardNumber: string | null; issueDate: string | null; issuePlace: string | null;
-  permanentAddress: string | null; emergencyContact: string | null;
+  id: string
+  username: string
+  fullName: string
+  email: string | null
+  phoneNumber: string | null
+  role: AuthUser['role']
+
+  tenantId: string | null
+  tenantFullName: string | null
+  dateOfBirth: string | null
+  tenantEmail: string | null
+  tenantPhone: string | null
+  gender: string | null
+  avatar: string | null
+
+  identityCardNumber: string | null
+  issueDate: string | null
+  issuePlace: string | null
+  permanentAddress: string | null
+  emergencyContact: string | null
 }
 
 interface ContractRoomRow extends RowDataPacket {
@@ -26,34 +42,70 @@ interface MemberRow extends RowDataPacket {
 }
 
 export async function getCurrentUserProfile(authUser: AuthUser): Promise<CurrentUserProfile> {
-  const [accountRows] = await pool.query<AccountRow[]>(
-    `SELECT u.id, u.username, u.full_name AS fullName, u.email,
-            u.phone_number AS phoneNumber, u.role,
-            t.id AS tenantId, t.identity_card_number AS identityCardNumber,
-            DATE_FORMAT(t.issue_date, '%Y-%m-%d') AS issueDate,
-            t.issue_place AS issuePlace, t.permanent_address AS permanentAddress,
-            t.emergency_contact AS emergencyContact
-     FROM users u
-     LEFT JOIN tenants t ON t.user_id = u.id
-     WHERE u.id = ? LIMIT 1`, [authUser.id]);
+ const [accountRows] = await pool.query<AccountRow[]>(
+  `SELECT
+      u.id,
+      u.username,
+      COALESCE(NULLIF(t.full_name, ''), u.full_name) AS fullName,
+      COALESCE(NULLIF(t.email, ''), u.email) AS email,
+      COALESCE(NULLIF(t.phone, ''), u.phone_number) AS phoneNumber,
+      u.role,
+
+      t.id AS tenantId,
+      t.full_name AS tenantFullName,
+      DATE_FORMAT(t.date_of_birth, '%Y-%m-%d') AS dateOfBirth,
+      t.email AS tenantEmail,
+      t.phone AS tenantPhone,
+      t.gender AS gender,
+      t.avatar AS avatar,
+
+      t.identity_card_number AS identityCardNumber,
+      DATE_FORMAT(t.issue_date, '%Y-%m-%d') AS issueDate,
+      t.issue_place AS issuePlace,
+      t.permanent_address AS permanentAddress,
+      t.emergency_contact AS emergencyContact
+
+   FROM users u
+   LEFT JOIN tenants t ON t.user_id = u.id
+   WHERE u.id = ?
+   LIMIT 1`,
+  [authUser.id],
+)
   const account = accountRows[0];
   if (!account) throw new HttpError(404, 'User account was not found');
 
   const profile: CurrentUserProfile = {
-    user: {
-      id: account.id, username: account.username, fullName: account.fullName,
-      email: account.email, phoneNumber: account.phoneNumber, role: account.role,
-    },
-    tenant: account.tenantId ? {
-      id: account.tenantId, identityCardNumber: account.identityCardNumber!,
-      issueDate: account.issueDate, issuePlace: account.issuePlace,
-      permanentAddress: account.permanentAddress, emergencyContact: account.emergencyContact,
-    } : null,
-    contract: null,
-    room: null,
-    amenities: [],
-    members: [],
-  };
+  user: {
+    id: account.id,
+    username: account.username,
+    fullName: account.fullName,
+    email: account.email,
+    phoneNumber: account.phoneNumber,
+    role: account.role,
+  },
+
+ tenant: account.tenantId
+  ? {
+      id: account.tenantId,
+      fullName: account.tenantFullName,
+      dateOfBirth: account.dateOfBirth,
+      email: account.tenantEmail,
+      phone: account.tenantPhone,
+      gender: account.gender,
+      avatar: account.avatar,
+      identityCardNumber: account.identityCardNumber,
+      issueDate: account.issueDate,
+      issuePlace: account.issuePlace,
+      permanentAddress: account.permanentAddress,
+      emergencyContact: account.emergencyContact,
+    }
+  : null,
+
+  contract: null,
+  room: null,
+  amenities: [],
+  members: [],
+}
   if (!account.tenantId) return profile;
 
   const [contractRows] = await pool.query<ContractRoomRow[]>(
