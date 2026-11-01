@@ -72,6 +72,12 @@ export default function TenantIncidentsPage() {
   }), [items]);
 
   const submit = async (input: { room_id: string; title: string; description: string }, imageFile?: File) => {
+    if (!input.room_id) {
+      const message = 'Bạn chưa có phòng thuê đang hiệu lực nên không thể gửi báo cáo sự cố.';
+      showToast(message, 'error');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     let uploadedImageUrl: string | undefined;

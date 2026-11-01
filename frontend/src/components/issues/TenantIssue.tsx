@@ -193,7 +193,11 @@ export function AddModal({
     };
     const submit = () => {
         setSubmitted(true);
-        if (!roomId || !title.trim() || !description.trim()) return;
+        if (!roomId) {
+            void save({ room_id: '', title: title.trim(), description: description.trim() });
+            return;
+        }
+        if (!title.trim() || !description.trim()) return;
         void save({ room_id: roomId, title: title.trim(), description: description.trim() }, imageFile ?? undefined);
     };
     return (
@@ -297,7 +301,7 @@ export function AddModal({
                     <button
                         type="button"
                         onClick={submit}
-                        disabled={saving || rooms.length === 0}
+                        disabled={saving}
                         className="rounded-lg bg-[#f59e0b] px-5 py-2.5 font-['Inter:Bold'] text-sm font-bold text-white"
                     >
                         {saving ? 'Đang gửi...' : 'Gửi yêu cầu'}
