@@ -10,13 +10,20 @@ export interface CurrentUserProfile {
     role: UserRole;
   };
   tenant: null | {
-    id: string;
-    identityCardNumber: string;
-    issueDate: string | null;
-    issuePlace: string | null;
-    permanentAddress: string | null;
-    emergencyContact: string | null;
-  };
+  id: string;
+  fullName: string | null;
+  dateOfBirth: string | null;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  avatar: string | null;
+
+ identityCardNumber: string | null;
+  issueDate: string | null;
+  issuePlace: string | null;
+  permanentAddress: string | null;
+  emergencyContact: string | null;
+};
   contract: null | {
     id: string;
     contractNumber: string;

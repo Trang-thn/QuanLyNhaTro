@@ -200,15 +200,84 @@ async function seedData(connection) {
     [rooms.p201, amenities.refrigerator],
   ]);
 
-  await insertMany(connection, 'tenants', [
-    'id', 'user_id', 'identity_card_number', 'issue_date', 'issue_place', 'permanent_address', 'emergency_contact',
-  ], [
-    [tenants.tenant1, users.tenant1, '079000000001', '2020-01-15', 'Cục Cảnh sát QLHC về TTXH', 'Quận 1, TP. Hồ Chí Minh', '0900000101'],
-    [tenants.tenant2, users.tenant2, '079000000002', '2021-06-20', 'Cục Cảnh sát QLHC về TTXH', 'Quận Bình Thạnh, TP. Hồ Chí Minh', '0900000102'],
-    [tenants.tenant3, users.tenant3, '079000000003', '2022-03-08', 'Cục Cảnh sát QLHC về TTXH', 'TP. Thủ Đức, TP. Hồ Chí Minh', '0900000103'],
-    // Reserved for G2-14: registration must link this existing profile without creating a review request.
-    [tenants.unlinkedFixture, null, '079000000014', null, null, null, null],
-  ]);
+  
+await insertMany(connection, 'tenants', [
+  'id',
+  'user_id',
+  'identity_card_number',
+  'issue_date',
+  'issue_place',
+  'permanent_address',
+  'emergency_contact',
+  'full_name',
+  'date_of_birth',
+  'phone',
+  'email',
+  'gender',
+  'avatar',
+], [
+  [
+    tenants.tenant1,
+    users.tenant1,
+    '079000000001',
+    '2020-01-15',
+    'Cục Cảnh sát QLHC về TTXH',
+    'Quận 1, TP. Hồ Chí Minh',
+    '0900000101',
+    'Nguyễn Minh An',
+    '2000-05-15',
+    '0900000002',
+    'an.nguyen@example.com',
+    'NAM',
+    null,
+  ],
+  [
+    tenants.tenant2,
+    users.tenant2,
+    '079000000002',
+    '2021-06-20',
+    'Cục Cảnh sát QLHC về TTXH',
+    'Quận Bình Thạnh, TP. Hồ Chí Minh',
+    '0900000102',
+    'Trần Quốc Bình',
+    '1999-08-20',
+    '0900000003',
+    'binh.tran@example.com',
+    'NAM',
+    null,
+  ],
+  [
+    tenants.tenant3,
+    users.tenant3,
+    '079000000003',
+    '2022-03-08',
+    'Cục Cảnh sát QLHC về TTXH',
+    'TP. Thủ Đức, TP. Hồ Chí Minh',
+    '0900000103',
+    'Lê Thu Chi',
+    '2001-03-10',
+    '0900000004',
+    'chi.le@example.com',
+    'NU',
+    null,
+  ],
+  [
+    tenants.unlinkedFixture,
+    null,
+    '079000000014',
+    null,
+    null,
+    null,
+    null,
+    'Khách hàng chưa liên kết',
+    null,
+    null,
+    null,
+    null,
+    null,
+  ],
+]);
+
 
   await insertMany(connection, 'contracts', [
     'id', 'contract_number', 'room_id', 'representative_tenant_id', 'start_date', 'end_date',
