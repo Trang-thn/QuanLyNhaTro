@@ -25,7 +25,7 @@ import type {
   rental_price: number | string
   deposit_amount: number | string
   status: string
-  billing_cycle_date: string
+  billing_cycle_day: number | string
 }
 
  const CONTRACT_SELECT = `
@@ -43,7 +43,7 @@ import type {
     c.rental_price,
     c.deposit_amount,
     c.status,
-    DATE_FORMAT(c.billing_cycle_date, '%Y-%m-%d') AS billing_cycle_date
+    c.billing_cycle_day
   FROM contracts c
   LEFT JOIN rooms r ON r.id = c.room_id
   LEFT JOIN tenants t ON t.id = c.representative_tenant_id
@@ -77,7 +77,7 @@ function mapContract(row: ContractRow): Contract {
     rental_price: Number(row.rental_price),
     deposit_amount: Number(row.deposit_amount),
     status: toContractStatus(row.status),
-    billing_cycle_date: String(row.billing_cycle_date).slice(0, 10),
+    billing_cycle_day: Number(row.billing_cycle_day),
   }
 }
 
@@ -151,7 +151,7 @@ export async function getAllContracts(
       rental_price,
       deposit_amount,
       status,
-      billing_cycle_date
+      billing_cycle_day
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `
@@ -166,7 +166,7 @@ export async function getAllContracts(
     data.rental_price,
     data.deposit_amount,
     status,
-    data.billing_cycle_date,
+    data.billing_cycle_day,
   ])
 
   return id
@@ -184,7 +184,7 @@ export async function getAllContracts(
     rental_price: 'rental_price',
     deposit_amount: 'deposit_amount',
     status: 'status',
-    billing_cycle_date: 'billing_cycle_date',
+    billing_cycle_day: 'billing_cycle_day',
   }
 
   const updates: string[] = []

@@ -13,6 +13,7 @@ import { contractRouter } from "./contract";
 import { tenantsRouter } from './tenantqlkt';
 import invoiceRouter from './invoice_router';
 import { tenantContractRouter } from './tenantContract';
+import { reportsRouter } from './reports';
 
 export const apiRouter = Router();
 
@@ -28,6 +29,7 @@ apiRouter.use('/rooms', roomsRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', usersRouter);
 apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/reports', reportsRouter);
 apiRouter.use('/tenant', tenantRouter);
 apiRouter.use("/contracts", contractRouter);
 apiRouter.use("/tenant-contracts", tenantContractRouter);

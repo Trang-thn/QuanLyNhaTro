@@ -24,7 +24,7 @@ export interface Contract {
   deposit_amount: number
 
   status: ContractStatus
-  billing_cycle_date: string
+  billing_cycle_day: number
 
   created_at?: string
   updated_at?: string
@@ -40,7 +40,7 @@ export interface CreateContractRequest {
   rental_price: number
   deposit_amount: number
 
-  billing_cycle_date: string
+  billing_cycle_day: number
   status?: ContractStatus
 }
 
@@ -54,7 +54,7 @@ export interface UpdateContractRequest {
   rental_price?: number
   deposit_amount?: number
 
-  billing_cycle_date?: string
+  billing_cycle_day?: number
   status?: ContractStatus
 }
 

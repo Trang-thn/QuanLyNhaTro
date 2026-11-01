@@ -5,9 +5,9 @@ import TenantWelcomeBanner from './TenantWelcomeBanner'
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
 
-interface Props { data: TenantDashboardData; linked?: boolean }
+interface Props { data: TenantDashboardData; linked?: boolean; tenantName?: string }
 
-export default function TenantDashboardView({ data, linked = true }: Props) {
+export default function TenantDashboardView({ data, linked = true, tenantName }: Props) {
   const { invoices, contracts, maintenanceRequests, rooms } = data
   const tenantContractId = data.contractId
   const tenantContract = contracts.find(c => c.id === tenantContractId)
@@ -29,8 +29,6 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
         <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200" style={{ background: '#fef9ec' }}>
           <div className="w-5 h-5 shrink-0 flex items-center justify-center rounded text-xs" style={{ background: '#fef3c7' }}>⚠</div>
           <p className="text-sm text-amber-800 flex-1">Tài khoản chưa được liên kết với hợp đồng phòng trọ nào. Vui lòng kiểm tra lại CCCD hoặc liên hệ Chủ trọ.</p>
-          <button className="text-sm font-semibold px-3 py-1.5 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-50 shrink-0">Liên hệ Chủ trọ</button>
-          <button className="text-sm font-semibold px-3 py-1.5 rounded-lg text-white shrink-0" style={{ background: AMBER }}>Cập nhật CCCD</button>
         </div>
 
         {/* Empty state */}
@@ -47,7 +45,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
         </div>
 
         {/* Empty info cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {['Thông tin phòng', 'Hợp đồng', 'Hóa đơn tháng này'].map(label => (
             <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <p className="text-sm text-gray-400 mb-2">{label}</p>
@@ -61,7 +59,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
 
   return (
     <div className="space-y-5">
-      <TenantWelcomeBanner roomNumber={tenantRoom?.room_number} />
+      <TenantWelcomeBanner roomNumber={tenantRoom?.room_number} tenantName={tenantName} />
 
       {/* 4 metric cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -86,7 +84,7 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
         {/* Invoice */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-gray-400">Hóa đơn tháng này</p>
+            <p className="text-xs text-gray-400">Hóa đơn gần nhất</p>
             <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
           </div>
           <p className="text-xl font-bold mb-0.5" style={{ color: NAVY }}>
@@ -111,7 +109,6 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
         <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-sm" style={{ color: NAVY }}>Hóa đơn gần đây</h3>
-            <button className="text-xs font-semibold" style={{ color: AMBER }}>Xem tất cả</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -140,24 +137,15 @@ export default function TenantDashboardView({ data, linked = true }: Props) {
           </div>
         </div>
 
-        {/* Payment reminder */}
-        <div className="rounded-xl p-5 flex flex-col gap-3" style={{ background: '#fef3c7' }}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: AMBER }}>
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <p className="font-bold text-sm" style={{ color: '#92400e' }}>Nhắc nhở đóng tiền</p>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="border-b border-gray-100 px-5 py-4"><h3 className="text-sm font-semibold" style={{ color: NAVY }}>Sự cố gần đây</h3></div>
+          <div className="space-y-2 p-3">
+            {tenantIncidents.length === 0 && <p className="p-3 text-xs text-gray-500">Bạn chưa gửi sự cố nào.</p>}
+            {tenantIncidents.slice(0, 4).map(incident => <div key={incident.id} className="rounded-lg border border-gray-100 p-3">
+              <div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-gray-800">{incident.title}</p><span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">{incident.status === 'HOAN_THANH' ? 'Hoàn thành' : incident.status === 'DANG_XU_LY' ? 'Đang xử lý' : 'Tiếp nhận'}</span></div>
+              <p className="mt-1 text-xs text-gray-400">{new Date(incident.created_at).toLocaleDateString('vi-VN')}</p>
+            </div>)}
           </div>
-          <p className="text-xs leading-relaxed" style={{ color: '#92400e' }}>
-            {currentInvoice
-              ? `Hóa đơn kỳ ${String(currentInvoice.billing_month).padStart(2, '0')}/${currentInvoice.billing_year}, hạn thanh toán ${new Date(currentInvoice.due_date).toLocaleDateString('vi-VN')}.`
-              : 'Hiện chưa có hóa đơn để thanh toán.'}
-          </p>
-          <button type="button" disabled className="w-full py-2.5 rounded-lg text-white font-semibold text-sm disabled:opacity-50" style={{ background: AMBER }} title="Chức năng thanh toán chưa có API trong Backend">
-            Thanh toán ngay
-          </button>
         </div>
       </div>
     </div>
