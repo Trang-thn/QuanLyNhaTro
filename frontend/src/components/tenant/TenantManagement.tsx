@@ -11,6 +11,7 @@ import {
   updateTenant,
   deleteTenant,
 } from '../../services/tenantService'
+import { formatDate } from '../../data/mockData'
 
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
@@ -63,7 +64,8 @@ export default function TenantManagement({
   const [keyword, setKeyword] = useState('')
   const [selectedTenant, setSelectedTenant] =
     useState<Tenant | null>(null)
-
+  const [detailTenant, setDetailTenant] =
+  useState<Tenant | null>(null)
   const [form, setForm] = useState<CreateTenantRequest>({
     ...emptyForm,
   })
@@ -420,6 +422,13 @@ export default function TenantManagement({
                 <td className="p-4">
                   <div className="flex gap-2">
                     <button
+    type="button"
+    onClick={() => setDetailTenant(tenant)}
+    className="rounded-md bg-amber-100 px-3 py-1 text-amber-700 transition hover:bg-amber-200"
+  >
+    Chi tiết
+  </button>
+                    <button
                       type="button"
                       onClick={() => openEditForm(tenant)}
                       disabled={
@@ -462,7 +471,174 @@ export default function TenantManagement({
           </tbody>
         </table>
       </div>
+             {/* Popup xem chi tiết khách hàng */}
+      {detailTenant && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setDetailTenant(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tenant-detail-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Tiêu đề */}
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <div>
+                <h3
+                  id="tenant-detail-title"
+                  className="text-xl font-bold"
+                  style={{ color: NAVY }}
+                >
+                  Chi tiết khách hàng
+                </h3>
 
+                <p className="mt-1 text-sm text-gray-500">
+                  Hồ sơ và thông tin cá nhân của khách thuê.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDetailTenant(null)}
+                className="rounded-lg px-3 py-2 text-gray-500 hover:bg-gray-100"
+              >
+                Đóng ✕
+              </button>
+            </div>
+
+            {/* Ảnh đại diện và tên khách hàng */}
+            <div className="mb-6 flex items-center gap-4 rounded-xl bg-gray-50 p-4">
+              {detailTenant.avatar ? (
+                <img
+                  src={detailTenant.avatar}
+                  alt="Ảnh đại diện khách hàng"
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold text-white"
+                  style={{ backgroundColor: NAVY }}
+                >
+                  {getTenantName(detailTenant).charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div>
+                <h4
+                  className="font-bold"
+                  style={{ color: NAVY }}
+                >
+                  {getTenantName(detailTenant)}
+                </h4>
+
+                <p className="text-sm text-gray-500">
+                  Mã khách hàng: {detailTenant.id}
+                </p>
+              </div>
+            </div>
+
+            {/* Thông tin cá nhân */}
+            <h4
+              className="mb-4 font-bold"
+              style={{ color: NAVY }}
+            >
+              Thông tin cá nhân
+            </h4>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-gray-500">Họ và tên</p>
+                <p className="mt-1 font-medium">
+                  {getTenantName(detailTenant)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Số CCCD/CMND</p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.identity_card_number || '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Ngày sinh</p>
+                <p className="mt-1 font-medium">
+                 {detailTenant.date_of_birth
+  ? String(detailTenant.date_of_birth).slice(0, 10)
+  : '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Giới tính</p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.gender === 'NAM'
+                    ? 'Nam'
+                    : detailTenant.gender === 'NU'
+                      ? 'Nữ'
+                      : detailTenant.gender === 'KHAC'
+                        ? 'Khác'
+                        : '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Số điện thoại</p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.phone || '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.email || '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Nơi cấp CCCD</p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.issue_place || '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Liên hệ khẩn cấp
+                </p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.emergency_contact || '—'}
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <p className="text-sm text-gray-500">
+                  Địa chỉ thường trú
+                </p>
+                <p className="mt-1 font-medium">
+                  {detailTenant.permanent_address || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Nút đóng */}
+            <div className="mt-6 flex justify-end border-t pt-4">
+              <button
+                type="button"
+                onClick={() => setDetailTenant(null)}
+                className="rounded-lg px-5 py-2 font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: NAVY }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Popup thêm hoặc sửa khách hàng */}
       {showForm && (
         <div

@@ -45,11 +45,11 @@ function statusLabel(status: ContractStatus): string {
   switch (status) {
     case 'HIEU_LUC':
       return 'Có hiệu lực'
-   case 'KHONG_HIEU_LUC':
+    case 'KHONG_HIEU_LUC':
       return 'Không hiệu lực'
-   case 'DA_THANH_LY':
+    case 'DA_THANH_LY':
       return 'Đã thanh lý'
-  default:
+    default:
       return status
   }
 }
@@ -106,7 +106,7 @@ function toContractInput(
     Number(form.deposit_amount) < 0
   ) {
     throw new Error('Tiền cọc không hợp lệ.')
- }
+  }
 
   return {
     room_id: form.room_id,
@@ -128,6 +128,9 @@ export default function ContractManagement({
   const [statusFilter, setStatusFilter] = useState('ALL')
 
   const [selected, setSelected] = useState<Contract | null>(null)
+  const [detailContract, setDetailContract] =
+    useState<Contract | null>(null)
+
   const [form, setForm] = useState<ContractForm>({
     ...emptyForm,
   })
@@ -252,14 +255,14 @@ export default function ContractManagement({
     })
   }, [contracts, keyword, statusFilter])
 
-function openCreateForm() {
+  function openCreateForm() {
     setSelected(null)
     setForm({ ...emptyForm })
     setError('')
     setShowForm(true)
   }
 
- function openEditForm(contract: Contract) {
+  function openEditForm(contract: Contract) {
     setSelected(contract)
 
     setForm({
@@ -282,7 +285,7 @@ function openCreateForm() {
     setShowForm(true)
   }
 
-async function handleSubmit(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
@@ -318,7 +321,7 @@ async function handleSubmit(
     }
   }
 
-async function handleLiquidate(contract: Contract) {
+  async function handleLiquidate(contract: Contract) {
     if (contract.status === 'DA_THANH_LY') {
       window.alert('Hợp đồng này đã được thanh lý.')
       return
@@ -469,7 +472,15 @@ async function handleLiquidate(contract: Contract) {
                 </td>
 
                 <td className="p-4">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDetailContract(contract)}
+                      className="rounded-md bg-amber-100 px-3 py-1 text-amber-700 hover:bg-amber-200"
+                    >
+                      Chi tiết
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => openEditForm(contract)}
@@ -705,13 +716,13 @@ async function handleLiquidate(contract: Contract) {
                 </label>
               </div>
 
-            {error && (
+              {error && (
                 <p className="text-sm text-red-600" role="alert">
                   {error}
                 </p>
               )}
 
-            <div className="flex justify-end gap-3 pt-3">
+              <div className="flex justify-end gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -734,6 +745,230 @@ async function handleLiquidate(contract: Contract) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Popup xem chi tiết hợp đồng */}
+      {detailContract && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setDetailContract(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contract-detail-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Tiêu đề */}
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <div>
+                <h3
+                  id="contract-detail-title"
+                  className="text-xl font-bold"
+                  style={{ color: NAVY }}
+                >
+                  Chi tiết hợp đồng
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Thông tin đầy đủ về hợp đồng thuê phòng.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDetailContract(null)}
+                className="rounded-lg px-3 py-2 text-gray-500 hover:bg-gray-100"
+              >
+                Đóng ✕
+              </button>
+            </div>
+
+            {/* Mã hợp đồng và trạng thái */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 p-4">
+              <div>
+                <p className="text-sm text-gray-500">
+                  Mã hợp đồng
+                </p>
+                <p className="mt-1 text-lg font-bold" style={{ color: NAVY }}>
+                  {detailContract.contract_number || '—'}
+                </p>
+              </div>
+
+              <span
+                className={`rounded-full px-3 py-1 text-sm font-medium ${
+                  detailContract.status === 'HIEU_LUC'
+                    ? 'bg-green-100 text-green-700'
+                    : detailContract.status === 'DA_THANH_LY'
+                      ? 'bg-gray-200 text-gray-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
+                {statusLabel(detailContract.status)}
+              </span>
+            </div>
+
+            {/* Thông tin khách thuê */}
+            <h4 className="mb-4 font-bold" style={{ color: NAVY }}>
+              Thông tin khách thuê
+            </h4>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-gray-500">
+                  Khách thuê đại diện
+                </p>
+                <p className="mt-1 font-medium">
+                  {getTenantName(detailContract)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Số điện thoại
+                </p>
+                <p className="mt-1 font-medium">
+                  {detailContract.tenant_phone ||
+                    detailContract.phone ||
+                    '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="mt-1 font-medium">
+                  {detailContract.email || '—'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Mã khách thuê
+                </p>
+                <p className="mt-1 font-medium">
+                  {detailContract.representative_tenant_id || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Thông tin phòng thuê */}
+            <h4 className="mb-4 font-bold" style={{ color: NAVY }}>
+              Thông tin phòng thuê
+            </h4>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-gray-500">Số phòng</p>
+                <p className="mt-1 font-medium">
+                  {getRoomNumber(detailContract)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Mã phòng</p>
+                <p className="mt-1 font-medium">
+                  {detailContract.room_id || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Thời hạn hợp đồng */}
+            <h4 className="mb-4 font-bold" style={{ color: NAVY }}>
+              Thời hạn hợp đồng
+            </h4>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-gray-500">
+                  Ngày bắt đầu
+                </p>
+                <p className="mt-1 font-medium">
+                  {formatDate(detailContract.start_date)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Ngày kết thúc
+                </p>
+                <p className="mt-1 font-medium">
+                  {formatDate(detailContract.end_date)}
+                </p>
+              </div>
+            </div>
+
+            {/* Chi phí và thanh toán */}
+            <h4 className="mb-4 font-bold" style={{ color: NAVY }}>
+              Chi phí và thanh toán
+            </h4>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg bg-blue-50 p-4">
+                <p className="text-sm text-gray-500">
+                  Tiền thuê phòng
+                </p>
+                <p className="mt-1 text-lg font-bold text-blue-700">
+                  {formatMoney(detailContract.rental_price)}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-amber-50 p-4">
+                <p className="text-sm text-gray-500">
+                  Tiền đặt cọc
+                </p>
+                <p className="mt-1 text-lg font-bold text-amber-700">
+                  {formatMoney(detailContract.deposit_amount)}
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <p className="text-sm text-gray-500">
+                  Ngày lập hóa đơn hàng tháng
+                </p>
+                <p className="mt-1 font-medium">
+                  Ngày {detailContract.billing_cycle_day} hàng tháng
+                </p>
+              </div>
+            </div>
+
+            {/* Thời gian tạo và cập nhật */}
+            <h4 className="mb-4 font-bold" style={{ color: NAVY }}>
+              Thông tin hệ thống
+            </h4>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-gray-500">
+                  Ngày tạo hợp đồng
+                </p>
+                <p className="mt-1 font-medium">
+                  {formatDate(detailContract.created_at)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Cập nhật lần cuối
+                </p>
+                <p className="mt-1 font-medium">
+                  {formatDate(detailContract.updated_at)}
+                </p>
+              </div>
+            </div>
+
+            {/* Nút đóng */}
+            <div className="flex justify-end border-t pt-4">
+              <button
+                type="button"
+                onClick={() => setDetailContract(null)}
+                className="rounded-lg px-5 py-2 font-semibold text-white hover:opacity-90"
+                style={{ backgroundColor: NAVY }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
