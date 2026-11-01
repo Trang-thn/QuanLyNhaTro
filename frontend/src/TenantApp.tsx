@@ -5,9 +5,10 @@ import Maintenance from './pages/issues/TenantIncidentsPage'
 import Notifications from './pages/notifications/TenantNotificationsPage'
 import Settings from './pages/Settings'
 import TenantContractPage from './pages/TenantContractPage'
+import TenantInvoices from './pages/tenantInvoice/TenantInvoices'
 import { apiRequest } from './services/api'
 
-type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'notifications' | 'contracts'
+type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'notifications' | 'contracts' | 'invoices'
 
 const AMBER = '#f59e0b'
 const NAVY = '#0d2137'
@@ -29,6 +30,12 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
     id: 'contracts', label: 'Hợp đồng của tôi',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>,
+  },
+  {
+    id: 'invoices', label: 'Hóa đơn & Thanh toán',
+    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7v16l3.5-2 3.5-2 3.5-2 3.5-2 3.5-2 3.5-2z" />
     </svg>,
   },
   {
@@ -59,6 +66,7 @@ const pageTitles: Record<TenantPage, string> = {
   incidents: 'Báo cáo sự cố',
   notifications: 'Thông báo',
   contracts: 'Hợp đồng của tôi',
+  invoices: 'Hóa đơn & Thanh toán',
 }
 
 interface Props { onLogout: () => void }
@@ -181,6 +189,7 @@ export default function TenantApp({ onLogout }: Props) {
           {currentPage === 'dashboard' && <TenantDashboard tenantName={displayName} />}
           {currentPage === 'profile' && <TenantProfile />}
           {currentPage === 'contracts' && <TenantContractPage />}
+          {currentPage === 'invoices' && <TenantInvoices />}
           {currentPage === 'incidents' && <Maintenance />}
           {currentPage === 'notifications' && <Notifications />}
           {currentPage === 'settings' && <Settings role="tenant" />}
