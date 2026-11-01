@@ -18,7 +18,7 @@ export interface Contract {
   rental_price: number
   deposit_amount: number
   status: ContractStatus
-  billing_cycle_date: string
+  billing_cycle_day: number
 }
 
 export interface CreateContractInput {
@@ -29,7 +29,7 @@ export interface CreateContractInput {
   rental_price: number
   deposit_amount: number
   status?: ContractStatus
-  billing_cycle_date: string
+  billing_cycle_day: number
 }
 
 export type UpdateContractInput =
