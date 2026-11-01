@@ -9,7 +9,7 @@ import { AuthUser, UserRole } from '../types/auth';
 import { HttpError } from '../utils/httpError';
 
 const BCRYPT_ROUNDS = 12;
-const GENERIC_FORGOT_RESPONSE = 'If the account exists, a verification code has been sent to its email.';
+const GENERIC_FORGOT_RESPONSE = 'If the account exists, a verification code may be sent to its email.';
 
 interface UserRow extends RowDataPacket {
   id: string; username: string; password_hash: string; full_name: string;
@@ -131,9 +131,13 @@ export async function requestPasswordReset(input: Record<string, unknown>): Prom
     await createTransport().sendMail({ from: env.smtpFrom, to: email,
       subject: 'Password reset verification code',
       text: `Your password reset code is ${otp}. It expires in ${env.otpExpiresMinutes} minutes.` });
-  } catch (error) {
-    await pool.execute('DELETE FROM password_reset_otps WHERE user_id = ?', [user.id]);
-    throw error;
+  } catch {
+    try {
+      await pool.execute('DELETE FROM password_reset_otps WHERE user_id = ?', [user.id]);
+    } catch {
+      // Keep the response independent of whether an email address belongs to an account.
+    }
+    console.error('Password reset email delivery failed');
   }
   return GENERIC_FORGOT_RESPONSE;
 }
@@ -157,7 +161,11 @@ export async function resetAccountPassword(input: Record<string, unknown>): Prom
       WHERE u.email = ? AND u.is_active = TRUE FOR UPDATE`, [email]);
     const reset = rows[0];
     if (!reset || new Date(reset.expires_at).getTime() <= Date.now() || reset.attempt_count >= 5) {
-      if (reset) await connection.execute('DELETE FROM password_reset_otps WHERE user_id = ?', [reset.user_id]);
+      if (reset) {
+        await connection.execute('DELETE FROM password_reset_otps WHERE user_id = ?', [reset.user_id]);
+        await connection.commit();
+        committed = true;
+      }
       throw new HttpError(400, 'OTP is invalid or expired');
     }
     if (!(await bcrypt.compare(otp, reset.otp_hash))) {

@@ -32,7 +32,7 @@ interface ContractApiResponse {
   deposit_amount: NumericValue
 
   status: ContractStatus
-  billing_cycle_date: string
+  billing_cycle_day: NumericValue
 
   created_at?: string
   updated_at?: string
@@ -66,6 +66,7 @@ function normalizeContract(data: ContractApiResponse): Contract {
     tenant_phone: data.tenant_phone ?? data.phone ?? null,
     rental_price: toNumber(data.rental_price),
     deposit_amount: toNumber(data.deposit_amount),
+    billing_cycle_day: toNumber(data.billing_cycle_day),
   }
 }
 

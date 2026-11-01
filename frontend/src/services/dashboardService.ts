@@ -68,7 +68,9 @@ export async function getDashboardData(): Promise<DashboardData> {
       cost: toNumber(request.cost),
     })),
     revenueData: response.revenueData.map((point) => ({
-      month: point.month,
+      month: /^\d{4}-\d{2}$/.test(point.month)
+        ? new Intl.DateTimeFormat('vi-VN', { month: '2-digit', year: '2-digit' }).format(new Date(`${point.month}-01T00:00:00`))
+        : point.month,
       revenue: toNumber(point.revenue),
       expense: toNumber(point.expense),
     })),

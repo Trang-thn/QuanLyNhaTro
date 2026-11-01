@@ -38,7 +38,7 @@ const emptyForm: ContractForm = {
   end_date: '',
   rental_price: 0,
   deposit_amount: 0,
-  billing_cycle_date: '',
+  billing_cycle_day: 1,
 }
 
 function statusLabel(status: ContractStatus): string {
@@ -86,8 +86,12 @@ function toContractInput(
     )
   }
 
-  if (!form.billing_cycle_date) {
-    throw new Error('Vui lòng nhập ngày lập hóa đơn.')
+  if (
+    !Number.isInteger(Number(form.billing_cycle_day)) ||
+    Number(form.billing_cycle_day) < 1 ||
+    Number(form.billing_cycle_day) > 31
+  ) {
+    throw new Error('Ngày lập hóa đơn phải là số từ 1 đến 31.')
   }
 
   if (
@@ -112,7 +116,7 @@ function toContractInput(
     end_date: form.end_date,
     rental_price: Number(form.rental_price),
     deposit_amount: Number(form.deposit_amount),
-    billing_cycle_date: form.billing_cycle_date,
+    billing_cycle_day: Number(form.billing_cycle_day),
   }
 }
 
@@ -271,10 +275,7 @@ function openCreateForm() {
         : formatDate(contract.end_date),
       rental_price: Number(contract.rental_price ?? 0),
       deposit_amount: Number(contract.deposit_amount ?? 0),
-      billing_cycle_date:
-        formatDate(contract.billing_cycle_date) === '—'
-          ? ''
-          : formatDate(contract.billing_cycle_date),
+      billing_cycle_day: Number(contract.billing_cycle_day ?? 1),
     })
 
     setError('')
@@ -638,21 +639,24 @@ async function handleLiquidate(contract: Contract) {
                   />
                 </label>
 
-                {/* Ngày lập hóa đơn */}
+                {/* Ngày trong tháng lập hóa đơn */}
                 <label className="space-y-1">
                   <span className="block text-sm font-medium">
-                    Ngày lập hóa đơn *
+                    Ngày lập hóa đơn (1–31) *
                   </span>
 
                   <input
                     required
-                    type="date"
+                    type="number"
+                    min={1}
+                    max={31}
+                    step={1}
                     className={inputClass}
-                    value={form.billing_cycle_date}
+                    value={form.billing_cycle_day}
                     onChange={(event) =>
                       setForm({
                         ...form,
-                        billing_cycle_date: event.target.value,
+                        billing_cycle_day: Number(event.target.value),
                       })
                     }
                   />

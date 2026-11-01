@@ -47,6 +47,11 @@ function isValidStatus(value: unknown): value is ContractStatus {
   );
 }
 
+function isValidBillingCycleDay(value: unknown): boolean {
+  const day = Number(value);
+  return Number.isInteger(day) && day >= 1 && day <= 31;
+}
+
 // 1. Lấy danh sách hợp đồng, hỗ trợ tìm theo số phòng và trạng thái.
 export async function getContracts(
   req: Request,
@@ -165,11 +170,10 @@ export async function createNewContract(
       return;
     }
 
-    // Kiểm tra ngày lập hóa đơn.
-    if (!isValidDate(data.billing_cycle_date)) {
+    // Kiểm tra ngày trong tháng dùng để lập hóa đơn.
+    if (!isValidBillingCycleDay(data.billing_cycle_day)) {
       res.status(400).json({
-        message:
-          'Ngày lập hóa đơn không hợp lệ. Định dạng yêu cầu: YYYY-MM-DD.',
+        message: 'Ngày lập hóa đơn phải là số từ 1 đến 31.',
       });
       return;
     }
@@ -224,7 +228,7 @@ export async function createNewContract(
       end_date: data.end_date,
       rental_price: rentalPrice,
       deposit_amount: depositAmount,
-      billing_cycle_date: data.billing_cycle_date,
+      billing_cycle_day: Number(data.billing_cycle_day),
       ...(data.status !== undefined
         ? { status: data.status }
         : {}),
@@ -345,14 +349,13 @@ export async function updateExistingContract(
       return;
     }
 
-    // Kiểm tra ngày lập hóa đơn.
+    // Kiểm tra ngày trong tháng dùng để lập hóa đơn.
     if (
-      data.billing_cycle_date !== undefined &&
-      !isValidDate(data.billing_cycle_date)
+      data.billing_cycle_day !== undefined &&
+      !isValidBillingCycleDay(data.billing_cycle_day)
     ) {
       res.status(400).json({
-        message:
-          'Ngày lập hóa đơn không hợp lệ. Định dạng yêu cầu: YYYY-MM-DD.',
+        message: 'Ngày lập hóa đơn phải là số từ 1 đến 31.',
       });
       return;
     }
@@ -431,8 +434,8 @@ export async function updateExistingContract(
       updateData.deposit_amount = Number(data.deposit_amount);
     }
 
-    if (data.billing_cycle_date !== undefined) {
-      updateData.billing_cycle_date = data.billing_cycle_date;
+    if (data.billing_cycle_day !== undefined) {
+      updateData.billing_cycle_day = Number(data.billing_cycle_day);
     }
 
     if (data.status !== undefined) {

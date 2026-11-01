@@ -30,7 +30,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview & Record
     `SELECT COALESCE(SUM(GREATEST(
        COALESCE(total_amount, 0) - COALESCE(paid_amount, 0), 0
      )), 0) AS totalDebt
-     FROM invoices`);
+     FROM invoices WHERE status <> 'CHO_CHOT'`);
 
   const [revenueRows] = await pool.query<RevenueRow[]>(
     `WITH RECURSIVE months AS (
@@ -73,13 +73,14 @@ export async function getDashboardOverview(): Promise<DashboardOverview & Record
        i.room_price, i.electricity_cost, i.water_cost, i.other_service_cost,
        i.total_amount, i.paid_amount, i.status, DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date
      FROM invoices i LEFT JOIN contracts c ON c.id = i.contract_id
+     WHERE i.status <> 'CHO_CHOT'
      ORDER BY i.billing_year DESC, i.billing_month DESC`);
   const [maintenanceRequests] = await pool.query<RowDataPacket[]>(
     `SELECT id, room_id, tenant_id, title, description, status, cost,
        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') AS created_at
      FROM maintenance_requests ORDER BY created_at DESC`);
   const [revenueData] = await pool.query<RowDataPacket[]>(
-    `SELECT DATE_FORMAT(m.month_start, '%b') AS month,
+    `SELECT DATE_FORMAT(m.month_start, '%Y-%m') AS month,
        (SELECT COALESCE(SUM(p.amount_paid), 0) FROM payments p
         WHERE p.payment_date >= m.month_start AND p.payment_date < DATE_ADD(m.month_start, INTERVAL 1 MONTH)) AS revenue,
        (SELECT COALESCE(SUM(mr.cost), 0) FROM maintenance_requests mr
