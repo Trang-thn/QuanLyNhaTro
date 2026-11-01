@@ -42,3 +42,15 @@ export async function apiRequest<T>(
     throw new Error(body?.message ?? `API request failed (${response.status})`);
   return body as T;
 }
+
+export async function apiDownload(path: string): Promise<Blob> {
+  const headers = new Headers()
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers })
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    throw new Error(body?.message ?? `API request failed (${response.status})`)
+  }
+  return response.blob()
+}
