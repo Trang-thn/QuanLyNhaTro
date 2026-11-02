@@ -1,8 +1,7 @@
-
-import { useState } from 'react'
+ import { useState } from 'react'
 import type { TenantProfileData } from '../../types/tenantProfile'
 import type { TenantRentalContract } from '../../types/tenantContract'
-
+import { createContractExtensionRequest } from '../../services/notificationService'
 const NAVY = '#0d2137'
 const AMBER = '#f59e0b'
 
@@ -326,15 +325,19 @@ function createContractHtml(
     </body>
     </html>
   `
-}
-
+ }
 export default function TenantContractView({
   profile,
   contracts,
 }: Props) {
   const [selectedContract, setSelectedContract] =
     useState<TenantRentalContract | null>(null)
-
+  const [extensionContract, setExtensionContract] =
+    useState<TenantRentalContract | null>(null)
+  const [newEndDate, setNewEndDate] = useState('')
+  const [extensionReason, setExtensionReason] = useState('')
+  const [extensionError, setExtensionError] = useState('')
+const [isSubmittingExtension, setIsSubmittingExtension] = useState(false)
   function exportContract(contract: TenantRentalContract) {
     const printWindow = window.open('', '_blank')
 
@@ -348,6 +351,72 @@ export default function TenantContractView({
     printWindow.document.close()
   }
 
+  function closeExtensionModal() {
+    setExtensionContract(null)
+    setNewEndDate('')
+    setExtensionReason('')
+    setExtensionError('')
+  }
+
+  async function handleExtensionSubmit() {
+  if (!extensionContract) return
+
+  if (!newEndDate) {
+    setExtensionError('Vui lòng chọn ngày kết thúc mới.')
+    return
+  }
+
+  const currentEndDate = extensionContract.end_date?.slice(0, 10)
+
+  if (currentEndDate && newEndDate <= currentEndDate) {
+    setExtensionError('Ngày kết thúc mới phải sau ngày kết thúc hiện tại.')
+    return
+  }
+
+  if (extensionReason.trim().length > 1000) {
+    setExtensionError('Ghi chú không được vượt quá 1000 ký tự.')
+    return
+  }
+
+  try {
+    setIsSubmittingExtension(true)
+    setExtensionError('')
+
+    await createContractExtensionRequest({
+      contract_id: extensionContract.id,
+      requested_end_date: newEndDate,
+      reason: extensionReason.trim(),
+    })
+
+    alert('Đã gửi yêu cầu gia hạn thành công. Vui lòng chờ Admin phê duyệt.')
+
+    closeExtensionModal()
+  } catch (error) {
+    console.error('Lỗi gửi yêu cầu gia hạn:', error)
+
+    setExtensionError(
+      error instanceof Error
+        ? error.message
+        : 'Không thể gửi yêu cầu gia hạn. Vui lòng thử lại.',
+    )
+  } finally {
+    setIsSubmittingExtension(false)
+  }
+}
+
+  function getMinimumEndDate(value?: string | null) {
+    if (!value) return undefined
+
+    const date = new Date(`${value.slice(0, 10)}T00:00:00`)
+    if (Number.isNaN(date.getTime())) return undefined
+
+    date.setDate(date.getDate() + 1)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -357,10 +426,10 @@ export default function TenantContractView({
         <p className="mt-1 text-sm text-gray-500">
           Thông tin các hợp đồng thuê phòng của bạn.
         </p>
-       </div>
- 
-       <section className="space-y-4">
-         {contracts.length === 0 ? (
+      </div>
+
+      <section className="space-y-4">
+        {contracts.length === 0 ? (
           <div className="rounded-xl bg-white p-8 text-center text-gray-500 shadow-sm">
             Bạn chưa có hợp đồng thuê phòng.
           </div>
@@ -375,8 +444,7 @@ export default function TenantContractView({
                 <h4 className="font-bold" style={{ color: NAVY }}>
                   Hợp đồng: {contract.contract_number}
                 </h4>
-
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">
+                 <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">
                   {contractStatus(contract.status)}
                 </span>
               </div>
@@ -411,13 +479,28 @@ export default function TenantContractView({
                 >
                   Xuất file PDF
                 </button>
+
+               {contract.status === 'HIEU_LUC' && (
+  <button
+    type="button"
+    onClick={() => {
+      setExtensionContract(contract)
+      setNewEndDate('')
+      setExtensionReason('')
+      setExtensionError('')
+    }}
+    className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-amber-50"
+    style={{ color: '#b45309', borderColor: AMBER }}
+  >
+    Yêu cầu gia hạn
+  </button>
+)}
               </div>
             </article>
           ))
         )}
       </section>
-
-      {selectedContract && (
+            {selectedContract && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setSelectedContract(null)}
@@ -430,8 +513,7 @@ export default function TenantContractView({
               <h3 className="text-xl font-bold" style={{ color: NAVY }}>
                 Chi tiết hợp đồng
               </h3>
-
-              <button
+               <button
                 type="button"
                 onClick={() => setSelectedContract(null)}
                 className="rounded-lg px-3 py-1 text-gray-500 hover:bg-gray-100"
@@ -442,8 +524,7 @@ export default function TenantContractView({
 
             <h4 className="mb-3 font-bold" style={{ color: NAVY }}>
               Thông tin hợp đồng
-            </h4>
-
+             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
               <Info label="Mã hợp đồng" value={selectedContract.contract_number} />
               <Info label="Trạng thái" value={contractStatus(selectedContract.status)} />
@@ -463,8 +544,7 @@ export default function TenantContractView({
 
             <h4 className="mb-3 mt-6 font-bold" style={{ color: NAVY }}>
               Thông tin khách thuê
-            </h4>
-
+             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
               {profile.profileFields.map((field) => (
                 <Info key={field.label} label={field.label} value={field.value} />
@@ -479,8 +559,7 @@ export default function TenantContractView({
                 style={{ backgroundColor: AMBER }}
               >
                 Xuất file PDF
-              </button>
-
+               </button>
               <button
                 type="button"
                 onClick={() => setSelectedContract(null)}
@@ -488,6 +567,116 @@ export default function TenantContractView({
               >
                 Đóng
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {extensionContract && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onClick={closeExtensionModal}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: NAVY }}>
+                  Yêu cầu gia hạn hợp đồng
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Gửi yêu cầu để Admin xem xét và phê duyệt.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeExtensionModal}
+                className="rounded-lg px-2 py-1 text-xl text-gray-500 hover:bg-gray-100"
+                aria-label="Đóng popup"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-5 space-y-3 rounded-lg bg-gray-50 p-4">
+              <h4 className="font-semibold" style={{ color: NAVY }}>
+                Thông tin hợp đồng
+              </h4>
+              <Info label="Mã hợp đồng" value={extensionContract.contract_number} />
+              <Info
+                label="Phòng thuê"
+                value={extensionContract.room_number ?? extensionContract.room_id}
+              />
+              <Info
+                label="Ngày kết thúc hiện tại"
+                value={formatDate(extensionContract.end_date)}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Ngày kết thúc mới <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                min={getMinimumEndDate(extensionContract.end_date)}
+                value={newEndDate}
+                onChange={(event) => {
+                  setNewEndDate(event.target.value)
+                  setExtensionError('')
+                }}
+                className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Ghi chú
+              </label>
+              <textarea
+  rows={4}
+  maxLength={1000}
+  value={extensionReason}
+  onChange={(event) => setExtensionReason(event.target.value)}
+  placeholder="Nhập lý do hoặc nội dung muốn gửi đến Admin..."
+  className="w-full resize-y rounded-lg border border-gray-300 p-3 outline-none focus:border-amber-500"
+/>
+              <p className="mt-1 text-xs text-gray-500">
+                Ghi chú không bắt buộc.
+              </p>
+            </div>
+
+            {extensionError && (
+              <p className="mb-4 text-sm text-red-600">{extensionError}</p>
+            )}
+
+            <div className="mb-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              <strong>ⓘ Lưu ý</strong>
+              <p className="mt-1">
+                Yêu cầu cần được Admin phê duyệt. Hợp đồng chưa thay đổi
+                cho đến khi Admin đồng ý.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeExtensionModal}
+                className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+  type="button"
+  onClick={handleExtensionSubmit}
+  disabled={isSubmittingExtension}
+  className="rounded-lg px-4 py-2 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+  style={{ backgroundColor: NAVY }}
+>
+  {isSubmittingExtension ? 'Đang gửi...' : 'Gửi yêu cầu'}
+</button>
             </div>
           </div>
         </div>
@@ -513,4 +702,4 @@ function Info({
       </p>
     </div>
   )
-}
+ }

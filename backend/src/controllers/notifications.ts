@@ -80,3 +80,87 @@ export async function removeNotification(req: Request, res: Response) {
   try { await notificationService.deleteSentNotification(req.user, req.params.id); return res.status(204).end(); }
   catch (error) { return sendError(res, error); }
 }
+// ================= API YÊU CẦU GIA HẠN HỢP ĐỒNG =================
+
+export async function postContractExtensionRequest(req: Request, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  if (req.user.role !== 'TENANT') {
+    return res.status(403).json({ message: 'Chỉ khách thuê mới được gửi yêu cầu gia hạn' });
+  }
+
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ message: 'Request body must be an object' });
+  }
+
+  const { contract_id, requested_end_date, reason } = req.body;
+
+  if (typeof contract_id !== 'string' || !validId(contract_id)) {
+    return res.status(400).json({ message: 'contract_id không hợp lệ' });
+  }
+
+  if (typeof requested_end_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(requested_end_date)) {
+    return res.status(400).json({ message: 'requested_end_date không hợp lệ' });
+  }
+
+  if (reason !== undefined && typeof reason !== 'string') {
+    return res.status(400).json({ message: 'reason phải là chuỗi ký tự' });
+  }
+
+  try {
+    const data = await notificationService.createContractExtensionRequest(req.user, {
+      contract_id,
+      requested_end_date,
+      reason: reason ?? '',
+    });
+
+    return res.status(201).json({ data });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function patchContractExtensionRequest(req: Request, res: Response) {
+  if (!validId(req.params.id)) {
+    return res.status(400).json({ message: 'Invalid notification id' });
+  }
+
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Chỉ Admin mới được xử lý yêu cầu gia hạn' });
+  }
+
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ message: 'Request body must be an object' });
+  }
+
+  const { action, rejection_reason } = req.body;
+
+  if (action !== 'APPROVE' && action !== 'REJECT') {
+    return res.status(400).json({ message: 'action phải là APPROVE hoặc REJECT' });
+  }
+
+  if (rejection_reason !== undefined && typeof rejection_reason !== 'string') {
+    return res.status(400).json({ message: 'rejection_reason phải là chuỗi ký tự' });
+  }
+
+  try {
+    const data = await notificationService.reviewContractExtensionRequest(
+      req.user,
+      req.params.id,
+      {
+        action,
+        rejection_reason: rejection_reason ?? '',
+      },
+    );
+
+    return res.json({ data });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}

@@ -51,3 +51,44 @@ export async function deleteAllSentNotifications() {
   const response = await notificationRequest<{ data: { count: number } }>('/notifications/sent', { method: 'DELETE' })
   return response.data
 }
+// Gửi yêu cầu gia hạn hợp đồng (Tenant)
+export async function createContractExtensionRequest(input: {
+  contract_id: string
+  requested_end_date: string
+  reason?: string
+}) {
+  const response = await notificationRequest<{
+    data: {
+      id: string
+      status: 'PENDING'
+      message?: string
+    }
+  }>('/notifications/contract-extension', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+
+  return response.data
+}
+
+// Admin duyệt hoặc từ chối yêu cầu gia hạn
+export async function reviewContractExtensionRequest(
+  id: string,
+  input: {
+    action: 'APPROVE' | 'REJECT'
+    rejection_reason?: string
+  },
+) {
+  const response = await notificationRequest<{
+    data: {
+      id: string
+      status: 'APPROVED' | 'REJECTED'
+      message?: string
+    }
+  }>(`/notifications/${encodeURIComponent(id)}/contract-extension`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+
+  return response.data
+}
