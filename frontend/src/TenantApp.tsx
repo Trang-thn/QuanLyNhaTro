@@ -201,9 +201,6 @@ export default function TenantApp({ onLogout }: Props) {
       {showLogoutModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(11,11,12,0.6)' }} onClick={() => setShowLogoutModal(false)}>
           <div className="bg-white flex flex-col gap-6 items-center p-8 rounded-2xl w-[420px]" style={{ boxShadow: '0px 8px 12px rgba(23,43,77,0.12)' }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-center rounded-[20px] w-10 h-10" style={{ background: '#ffedec' }}>
-              <img src="/assets/12139.svg" alt="" className="w-5 h-5" />
-            </div>
             <div className="text-center">
               <p className="font-bold text-[18px] text-[#172b4d] mb-2">Xác nhận đăng xuất</p>
               <p className="text-[14px] text-[#4b5563]">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
