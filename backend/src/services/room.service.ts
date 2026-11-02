@@ -7,6 +7,8 @@ export class RoomServiceError extends Error {
   constructor(public statusCode: number, message: string) { super(message); }
 }
 
+const ROOM_TYPE_NAME_EXISTS = 'Room type name already exists';
+
 interface IdRow extends RowDataPacket { id: string; }
 
 const activeContract = `EXISTS (
@@ -39,16 +41,26 @@ export async function getRoomTypes() {
 }
 
 export async function createRoomType(input: CreateRoomTypeInput) {
+  const name = input.name.trim();
+  const [existing] = await pool.query<IdRow[]>('SELECT id FROM room_types WHERE name = ? LIMIT 1', [name]);
+  if (existing[0]) throw new RoomServiceError(409, ROOM_TYPE_NAME_EXISTS);
+
   const id = randomUUID();
   await pool.execute<ResultSetHeader>(
     'INSERT INTO room_types (id, name, base_price, area_sqm, description) VALUES (?, ?, ?, ?, ?)',
-    [id, input.name.trim(), input.base_price, input.area_sqm ?? null, input.description?.trim() || null],
+    [id, name, input.base_price, input.area_sqm ?? null, input.description?.trim() || null],
   );
   const [rows] = await pool.query<RoomTypeRecord[]>('SELECT id, name, base_price, area_sqm, description FROM room_types WHERE id = ?', [id]);
   return rows[0];
 }
 
 export async function updateRoomType(id: string, input: UpdateRoomTypeInput) {
+  const name = input.name?.trim();
+  if (name !== undefined) {
+    const [existing] = await pool.query<IdRow[]>('SELECT id FROM room_types WHERE name = ? AND id <> ? LIMIT 1', [name, id]);
+    if (existing[0]) throw new RoomServiceError(409, ROOM_TYPE_NAME_EXISTS);
+  }
+
   const fields: string[] = [];
   const values: Array<string | number | null> = [];
   for (const key of ['name', 'base_price', 'area_sqm', 'description'] as const) {
@@ -99,12 +111,16 @@ export async function createRoom(input: CreateRoomInput) {
     let roomTypeId = input.room_type_id ?? null;
 
     if (input.new_room_type) {
+      const name = input.new_room_type.name.trim();
+      const [existing] = await connection.query<IdRow[]>('SELECT id FROM room_types WHERE name = ? LIMIT 1', [name]);
+      if (existing[0]) throw new RoomServiceError(409, ROOM_TYPE_NAME_EXISTS);
+
       roomTypeId = randomUUID();
       await connection.execute<ResultSetHeader>(
         'INSERT INTO room_types (id, name, base_price, area_sqm, description) VALUES (?, ?, ?, ?, ?)',
         [
           roomTypeId,
-          input.new_room_type.name.trim(),
+          name,
           input.new_room_type.base_price,
           input.new_room_type.area_sqm ?? null,
           input.new_room_type.description?.trim() || null,
