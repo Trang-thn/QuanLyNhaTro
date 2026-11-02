@@ -23,8 +23,8 @@ export default function DashboardView({ data }: { data: DashboardData }) {
   const occupied = rooms.filter(r => r.status === 'DANG_THUE').length
   const vacant = rooms.filter(r => r.status === 'TRONG').length
   const maintenanceRooms = rooms.filter(r => r.status === 'BAO_TRI').length
-  const unpaidInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN')
-  const totalDebt = unpaidInvoices.reduce((s, i) => s + (i.total_amount - i.paid_amount), 0)
+  const unpaidInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN' && i.total_amount > i.paid_amount)
+  const totalDebt = unpaidInvoices.reduce((s, i) => s + Math.max(0, i.total_amount - i.paid_amount), 0)
   const today = new Date()
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const overdueCount = unpaidInvoices.filter(i => i.due_date < todayIso).length
@@ -38,7 +38,8 @@ export default function DashboardView({ data }: { data: DashboardData }) {
     { name: 'Bảo trì', value: maintenanceRooms },
   ]
 
-  const overdueInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN').slice(0, 3)
+  const overdueInvoices = invoices.filter(i => i.status !== 'DA_THANH_TOAN' && i.total_amount > i.paid_amount)
+    .sort((a, b) => a.due_date.localeCompare(b.due_date)).slice(0, 5)
   const expiringContracts = contracts.filter(c => {
     if (c.status !== 'HIEU_LUC') return false
     const daysRemaining = (new Date(`${c.end_date}T00:00:00`).getTime() - new Date(`${todayIso}T00:00:00`).getTime()) / 86400000
@@ -54,8 +55,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
         {/* Revenue */}
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-500">Doanh thu tháng</p>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">+12.5%</span>
+            <p className="text-sm text-gray-500">Tiền đã thu tháng này</p>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: NAVY }}>{new Intl.NumberFormat('vi-VN').format(data.revenueThisMonth)} VNĐ</p>
           <p className="text-xs text-gray-400">Dòng tiền thực thu trong tháng</p>
@@ -64,7 +64,6 @@ export default function DashboardView({ data }: { data: DashboardData }) {
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-500">Tỷ lệ lấp đầy</p>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">+4%</span>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: NAVY }}>{occupancyPct}% ({occupied}/{totalRooms} phòng)</p>
           <p className="text-xs text-gray-400">{occupied} Đang thuê · {vacant} Phòng trống · {maintenanceRooms} Bảo trì</p>
@@ -83,8 +82,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
         {/* Maintenance */}
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-500">Sự cố &amp; Bảo trì</p>
-            <button className="text-xs font-semibold" style={{ color: AMBER }}>Xem danh sách →</button>
+            <p className="text-sm text-gray-500">Yêu cầu bảo trì đang mở</p>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: NAVY }}>{pendingMaintenance} Yêu cầu</p>
           <p className="text-xs text-gray-400">{newMaintenance} Mới tiếp nhận · {pendingMaintenance - newMaintenance} Đang sửa chữa</p>
@@ -96,15 +94,15 @@ export default function DashboardView({ data }: { data: DashboardData }) {
         {/* Dual bar chart */}
         <div className="xl:col-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm" style={{ color: NAVY }}>Biểu đồ doanh thu &amp; Chi phí 6 tháng gần nhất</h3>
+            <h3 className="font-semibold text-sm" style={{ color: NAVY }}>Doanh thu &amp; chi phí bảo trì · 6 tháng gần nhất</h3>
             <div className="flex items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm" style={{ background: AMBER }} />
                 <span className="text-gray-500">Doanh thu (VNĐ)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm" style={{ background: NAVY }} />
-                <span className="text-gray-500">Chi phí (VNĐ)</span>
+              <div className="w-3 h-3 rounded-sm" style={{ background: NAVY }} />
+                <span className="text-gray-500">Chi phí bảo trì (VNĐ)</span>
               </div>
             </div>
           </div>
@@ -114,7 +112,7 @@ export default function DashboardView({ data }: { data: DashboardData }) {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => `${(v / 1000000).toFixed(0)}Tr`} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip
-                formatter={(v, name) => [formatVND(Number(v)), name === 'revenue' ? 'Doanh thu' : 'Chi phí']}
+                formatter={(v, name) => [formatVND(Number(v)), name === 'revenue' ? 'Doanh thu' : 'Chi phí bảo trì']}
                 contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
               />
               <Bar dataKey="revenue" fill={AMBER} radius={[4, 4, 0, 0]} />
@@ -165,13 +163,12 @@ export default function DashboardView({ data }: { data: DashboardData }) {
         <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-sm" style={{ color: NAVY }}>Hóa đơn chờ thu tiền / Quá hạn</h3>
-            <button className="text-xs font-semibold" style={{ color: AMBER }}>Xem tất cả hóa đơn →</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
-                  {['Số phòng', 'Khách thuê', 'Kỳ HĐ', 'Tổng tiền', 'Hạn đóng', 'Trạng thái', 'Hành động'].map(h => (
+                  {['Số phòng', 'Khách thuê', 'Kỳ HĐ', 'Còn nợ', 'Hạn đóng', 'Trạng thái'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -186,20 +183,12 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                       <td className="px-4 py-3 font-semibold text-sm" style={{ color: NAVY }}>{getRoomNumber(inv.room_id)}</td>
                       <td className="px-4 py-3 text-gray-700 text-xs">{tenantName}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">T{inv.billing_month}/{inv.billing_year}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800 text-xs">{formatVND(inv.total_amount)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-800 text-xs">{formatVND(Math.max(0, inv.total_amount - inv.paid_amount))}</td>
                       <td className="px-4 py-3 text-xs" style={{ color: isOverdue ? '#e53e3e' : '#6b7280' }}>{inv.due_date.split('-').reverse().join('/')}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${isOverdue ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
                           {isOverdue ? `Quá hạn ${Math.floor((new Date(`${todayIso}T00:00:00`).getTime() - new Date(`${inv.due_date}T00:00:00`).getTime()) / 86400000)} ngày` : statusLabel[inv.status]}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button className="px-2.5 py-1 rounded text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">Gửi HĐ</button>
-                          {isOverdue && (
-                            <button className="px-2.5 py-1 rounded text-xs font-semibold text-white" style={{ background: '#e53e3e' }}>Nhắc nợ</button>
-                          )}
-                        </div>
                       </td>
                     </tr>
                   )
@@ -228,8 +217,6 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Sắp hết hạn</span>
                     <div className="flex gap-1">
-                      <button className="text-[11px] px-2 py-0.5 rounded border border-gray-200 text-gray-600">Gia hạn HĐ</button>
-                      <button className="text-[11px] px-2 py-0.5 rounded border border-gray-200 text-gray-600">Báo trả</button>
                     </div>
                   </div>
                 </div>

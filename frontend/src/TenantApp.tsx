@@ -1,15 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TenantDashboard from './pages/TenantDashboard'
 import TenantProfile from './pages/TenantProfile'
-import TenantInvoices from './pages/tenantInvoice/TenantInvoices'
-/* Temporarily unavailable tenant-owned pages. Restore imports, navigation, and render branches when those modules are integrated.
-import TenantContracts from './pages/TenantContracts'
-import Invoices from './pages/Invoices'
-*/
 import Maintenance from './pages/issues/TenantIncidentsPage'
 import Notifications from './pages/notifications/TenantNotificationsPage'
 import Settings from './pages/Settings'
 import TenantContractPage from './pages/TenantContractPage'
+import TenantInvoices from './pages/tenantInvoice/TenantInvoices'
+import { apiRequest } from './services/api'
 
 type TenantPage = 'dashboard' | 'profile' | 'settings' | 'incidents' | 'notifications' | 'contracts' | 'invoices'
 
@@ -30,13 +27,6 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
     </svg>,
   },
   {
-    id: 'invoices', label: 'Hóa đơn & Thanh toán',
-    icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-    </svg>,
-  },
-  /* Temporarily unavailable tenant-owned pages; restore these navigation entries with their implementations.
-  {
     id: 'contracts', label: 'Hợp đồng của tôi',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -45,10 +35,9 @@ const tenantNavItems: { id: TenantPage; label: string; icon: React.ReactNode }[]
   {
     id: 'invoices', label: 'Hóa đơn & Thanh toán',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7v16l3.5-2 3.5-2 3.5-2 3.5-2 3.5-2 3.5-2z" />
     </svg>,
   },
-  */
   {
     id: 'incidents', label: 'Báo cáo sự cố',
     icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
@@ -85,6 +74,16 @@ interface Props { onLogout: () => void }
 export default function TenantApp({ onLogout }: Props) {
   const [currentPage, setCurrentPage] = useState<TenantPage>('dashboard')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [profile, setProfile] = useState<{ fullName: string; roomNumber: string | null } | null>(null)
+  useEffect(() => {
+    let active = true
+    apiRequest<{ user: { fullName: string }; room: { roomNumber: string } | null }>('/users/me')
+      .then(value => { if (active) setProfile({ fullName: value.user.fullName, roomNumber: value.room?.roomNumber ?? null }) })
+      .catch(() => { if (active) setProfile(null) })
+    return () => { active = false }
+  }, [])
+  const displayName = profile?.fullName ?? 'Khách thuê'
+  const initial = displayName.trim().charAt(0).toLocaleUpperCase('vi-VN') || 'K'
 
   const pageTitle = pageTitles[currentPage]
 
@@ -136,10 +135,10 @@ export default function TenantApp({ onLogout }: Props) {
         {/* User + logout */}
         <div className="border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           <div className="px-4 py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: AMBER }}>N</div>
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: AMBER }}>{initial}</div>
             <div className="flex-1 min-w-0">
-              <div className="text-white text-[13px] font-medium truncate">Nguyễn Văn A</div>
-              <div className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.45)' }}>Phòng P101</div>
+              <div className="text-white text-[13px] font-medium truncate">{displayName}</div>
+              <div className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.45)' }}>{profile?.roomNumber ? `Phòng ${profile.roomNumber}` : 'Chưa liên kết phòng'}</div>
             </div>
           </div>
           <button
@@ -171,12 +170,6 @@ export default function TenantApp({ onLogout }: Props) {
             <span className="font-semibold" style={{ color: NAVY }}>{pageTitle}</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input placeholder="Tìm kiếm..." className="pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-400 w-44 bg-gray-50" />
-            </div>
             <button type="button" aria-label="Mở thông báo" onClick={() => setCurrentPage('notifications')} className="relative p-2 rounded-lg hover:bg-gray-100 transition">
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -184,21 +177,19 @@ export default function TenantApp({ onLogout }: Props) {
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center" style={{ background: '#e53e3e' }}>1</span>
             </button>
             <div className="flex items-center gap-2 pl-3 border-l border-gray-200 cursor-pointer" onClick={() => setCurrentPage('settings')}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: AMBER }}>N</div>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: AMBER }}>{initial}</div>
               <div className="hidden sm:block">
-                <div className="text-sm font-semibold" style={{ color: NAVY }}>Nguyễn Văn A</div>
+                <div className="text-sm font-semibold" style={{ color: NAVY }}>{displayName}</div>
               </div>
             </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          {currentPage === 'dashboard' && <TenantDashboard />}
+          {currentPage === 'dashboard' && <TenantDashboard tenantName={displayName} />}
           {currentPage === 'profile' && <TenantProfile />}
+          {currentPage === 'contracts' && <TenantContractPage />}
           {currentPage === 'invoices' && <TenantInvoices />}
-          {/* Restore these branches with the tenant-owned page modules. */}
-          {/* {currentPage === 'contracts' && <TenantContracts />}
-          {currentPage === 'invoices'  && <Invoices />} */}
           {currentPage === 'incidents' && <Maintenance />}
           {currentPage === 'notifications' && <Notifications />}
           {currentPage === 'settings' && <Settings role="tenant" />}

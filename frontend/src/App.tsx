@@ -14,6 +14,7 @@ import Utilities from './pages/Utilities/Utilities'
 import Invoices from './pages/invoice/Invoices'
 import TenantRegistrationQueue from './pages/TenantRegistrationQueue'
 import TenantApp from './TenantApp'
+import ReportExportModal from './components/reports/ReportExportModal'
 
 import {
   apiRequest,
@@ -252,147 +253,6 @@ function LogoutModal({
             style={{ background: '#e53e3e' }}
           >
             Đăng xuất
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ExportReportModal({ onClose }: { onClose: () => void }) {
-  const [reportType, setReportType] = useState(0)
-  const [fileFormat, setFileFormat] = useState<'excel' | 'pdf'>('excel')
-  const [fromDate, setFromDate] = useState('01/01/2026')
-  const [toDate, setToDate] = useState('30/09/2026')
-
-  const reportTypes = [
-    'Báo cáo Doanh thu & Dòng tiền',
-    'Báo cáo Công nợ & Hóa đơn chưa thanh toán',
-    'Báo cáo Điện nước & Mức tiêu thụ',
-    'Báo cáo Tỷ lệ lấp đầy & Khách thuê',
-  ]
-
-  return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ background: 'rgba(11,11,12,0.6)' }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white flex flex-col gap-6 items-start p-8 rounded-2xl w-[640px] max-w-full max-h-[90vh] overflow-y-auto"
-        style={{ boxShadow: '0px 8px 12px rgba(23,43,77,0.12)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between w-full">
-          <p className="font-bold text-[18px] text-[#172b4d]">
-            Xuất báo cáo thống kê
-          </p>
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition"
-            aria-label="Đóng"
-          >
-            <img src="/assets/29214.svg" alt="" className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-3 w-full">
-          <p className="text-[13px] font-semibold text-[#1f2937]">
-            Loại báo cáo muốn xuất
-          </p>
-
-          <div className="flex flex-col gap-2.5">
-            {reportTypes.map((label, i) => (
-              <label key={label} className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="reportType"
-                  checked={reportType === i}
-                  onChange={() => setReportType(i)}
-                  className="accent-amber-500"
-                />
-                <span className="text-[14px] text-[#1f2937]">{label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 w-full">
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label className="text-[13px] font-semibold text-[#1f2937]">
-              Từ ngày
-            </label>
-            <input
-              type="text"
-              value={fromDate}
-              onChange={e => setFromDate(e.target.value)}
-              className="border border-[#e5e7eb] rounded-lg h-10 px-3 text-[14px] text-[#1f2937] outline-none"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label className="text-[13px] font-semibold text-[#1f2937]">
-              Đến ngày
-            </label>
-            <input
-              type="text"
-              value={toDate}
-              onChange={e => setToDate(e.target.value)}
-              className="border border-[#e5e7eb] rounded-lg h-10 px-3 text-[14px] text-[#1f2937] outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 w-full">
-          <p className="text-[13px] font-semibold text-[#1f2937]">
-            Định dạng file xuất
-          </p>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setFileFormat('excel')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
-              style={{
-                background: fileFormat === 'excel' ? AMBER : 'white',
-                color: fileFormat === 'excel' ? 'white' : '#4b5563',
-                border: fileFormat === 'excel' ? 'none' : '1px solid #e5e7eb',
-              }}
-            >
-              <img src="/assets/75865.svg" alt="" className="w-4 h-4" />
-              File Excel (.xlsx)
-            </button>
-
-            <button
-              onClick={() => setFileFormat('pdf')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
-              style={{
-                background: fileFormat === 'pdf' ? AMBER : 'white',
-                color: fileFormat === 'pdf' ? 'white' : '#4b5563',
-                border: fileFormat === 'pdf' ? 'none' : '1px solid #e5e7eb',
-              }}
-            >
-              <img src="/assets/9a94e.svg" alt="" className="w-4 h-4" />
-              File PDF (.pdf)
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3 justify-end w-full">
-          <button
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-lg border border-[#e5e7eb] text-sm font-semibold text-[#4b5563] hover:bg-gray-50 transition"
-          >
-            Hủy
-          </button>
-
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-white text-sm font-semibold transition"
-            style={{ background: AMBER }}
-          >
-            <img src="/assets/b30d5.svg" alt="" className="w-3.5 h-3.5" />
-            Tải báo cáo
           </button>
         </div>
       </div>
@@ -743,7 +603,7 @@ export default function App() {
       )}
 
       {showExportModal && (
-        <ExportReportModal onClose={() => setShowExportModal(false)} />
+        <ReportExportModal onClose={() => setShowExportModal(false)} />
       )}
     </div>
   )
