@@ -17,6 +17,7 @@ interface TenantRentalContractResponse extends ApiRecord {
   room_id?: number | string
   room_name?: string
   room_number?: string
+  representative_name?: string | null
   start_date: string
   end_date: string
   rental_price: NumericValue
@@ -104,6 +105,7 @@ function normalizeStatus(status: string): ContractStatus {
 }
 
 function normalizeContract(
+  
   raw: TenantRentalContractResponse,
 ): TenantRentalContract {
   return {
@@ -115,6 +117,7 @@ function normalizeContract(
     room_number: toStringValue(
       raw.room_number ?? raw.room_name ?? raw.room_id,
     ),
+    representative_name: toStringOrNull(raw.representative_name),
     start_date: raw.start_date,
     end_date: raw.end_date,
     rental_price: toNumber(raw.rental_price),

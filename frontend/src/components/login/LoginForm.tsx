@@ -46,8 +46,18 @@ export default function LoginForm({ onLogin, onGo, credentials }: { onLogin: (ro
             <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
               placeholder="Nhập mật khẩu"
               className="w-full px-3 py-2.5 border border-[#e5e7eb] rounded-lg text-sm focus:outline-none focus:border-[#f59e0b] transition pr-10" />
-            <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2">
-              <img src="/assets/b905a.svg" alt="" className="w-4 h-4 opacity-40 hover:opacity-70 transition" />
+            <button
+              type="button"
+              onClick={() => setShowPw(p => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
+              aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              aria-pressed={showPw}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2.5 12s3.4-7 9.5-7 9.5 7 9.5 7-3.4 7-9.5 7-9.5-7-9.5-7Z" />
+                <circle cx="12" cy="12" r="3" />
+                {!showPw && <path d="m4 4 16 16" />}
+              </svg>
             </button>
           </div>
         </div>
