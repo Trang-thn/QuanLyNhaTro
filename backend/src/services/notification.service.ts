@@ -185,3 +185,9 @@ export async function deleteAllSentNotifications(user: AuthUser) {
   );
   return { count: result.affectedRows };
 }
+// ================= TÁCH SERVICE GIA HẠN HỢP ĐỒNG =================
+
+export {
+  createContractExtensionRequest,
+  reviewContractExtensionRequest,
+} from './contract-extension.service'
