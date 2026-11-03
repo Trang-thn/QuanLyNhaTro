@@ -193,12 +193,10 @@ export function RoomEditModal({ room, onClose, onSave, roomTypes, amenities, loa
               {errors.area && <p className="mt-1 text-xs text-red-500">{errors.area}</p>}
             </div>
           </div>
-          <p className="text-xs text-gray-500">Giá phòng và diện tích hiển thị theo loại phòng; API cập nhật phòng chỉ lưu mã loại phòng.</p>
 
           {/* Tiện nghi — pre-fill từ phòng hiện tại */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tiện nghi</label>
-            <p className="mb-2 text-xs text-gray-500">{'Ti\u1ec7n nghi ch\u01b0a \u0111\u01b0\u1ee3c l\u01b0u v\u00ec backend ch\u01b0a c\u00f3 API ti\u1ec7n nghi ph\u00f2ng.'}</p>
             <div className="flex flex-wrap gap-2">
               {amenities.map(a => {
                 const selected = form.amenity_ids.includes(a.id)

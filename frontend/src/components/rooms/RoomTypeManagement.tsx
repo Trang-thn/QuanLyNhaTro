@@ -200,14 +200,14 @@ export function RoomTypeManagement({ roomTypes, rooms, loading, error, onCreate,
               <h2 className="text-lg font-bold text-gray-900">{editing ? 'Sửa loại phòng' : 'Thêm loại phòng'}</h2>
               <button type="button" disabled={saving} onClick={() => setEditing(undefined)} aria-label="Đóng" className="text-gray-400">×</button>
             </div>
-            <label className="block text-sm font-medium text-gray-700">Tên loại phòng *
+            <label className="block text-sm font-medium text-gray-700">Tên loại phòng <span className="text-red-500">*</span>
               <input required maxLength={100} value={draft.name} onChange={event => setDraft(previous => ({ ...previous, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 font-normal" />
             </label>
-            <label className="block text-sm font-medium text-gray-700">Giá cơ bản/tháng *
+            <label className="block text-sm font-medium text-gray-700">Giá cơ bản/tháng <span className="text-red-500">*</span>
               <input required type="number" min="0.01" max="9999999999.99" step="0.01" value={draft.base_price} onChange={event => setDraft(previous => ({ ...previous, base_price: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 font-normal" />
             </label>
-            <label className="block text-sm font-medium text-gray-700">Diện tích (m²)
-              <input type="number" min="0.01" max="999.99" step="0.01" value={draft.area_sqm} onChange={event => setDraft(previous => ({ ...previous, area_sqm: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 font-normal" />
+            <label className="block text-sm font-medium text-gray-700">Diện tích (m²) <span className="text-red-500">*</span>
+              <input required type="number" min="0.01" max="999.99" step="0.01" value={draft.area_sqm} onChange={event => setDraft(previous => ({ ...previous, area_sqm: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 font-normal" />
             </label>
             <label className="block text-sm font-medium text-gray-700">Mô tả
               <textarea rows={3} value={draft.description} onChange={event => setDraft(previous => ({ ...previous, description: event.target.value }))} className="mt-1 w-full resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 font-normal" />
