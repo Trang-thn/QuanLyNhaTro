@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-navy-950: #060f1e;
+  --color-navy-900: #0d2137;
+  --color-navy-800: #122a47;
+  --color-navy-700: #163d70;
+  --color-navy-600: #1d4e8f;
+  --color-navy-500: #2563ae;
+  --color-navy-400: #3b82f6;
+  --color-navy-300: #93c5fd;
+  --color-navy-50: #eff6ff;
+  --font-sans: 'Inter', sans-serif;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f0f5fb;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c5d3e8; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+@page { size: landscape; margin: 12mm; }
+@media print {
+  body * { visibility: hidden !important; }
+  .report-modal, .report-modal * { visibility: visible !important; }
+  .report-modal { position: static !important; display: block !important; width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .report-print-content { display: block !important; overflow: visible !important; padding: 0 !important; }
+  .report-controls { display: none !important; }
+  .report-modal header button { display: none !important; }
+  .report-document { color: #111827; }
+  .report-document h1 { font-size: 18pt; }
+  .report-document table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .report-document thead { display: table-header-group; }
+  .report-document tr { break-inside: avoid; }
+  .report-document th, .report-document td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+  .report-document th { background: #0d2137 !important; color: white !important; print-color-adjust: exact; }
+  .report-document .grid > div { break-inside: avoid; }
+}

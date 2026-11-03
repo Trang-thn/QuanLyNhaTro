@@ -1,0 +1,42 @@
+# QUY TẮC SINH CODE BẮT BUỘC - HỆ THỐNG QUẢN LÝ PHÒNG TRỌ
+
+## 1. PHÂN CÔNG QUẢN LÝ & NHÁNH GIT (GIT BRANCHING)
+- Branch `main` / `develop`: Chỉ Leader (Trang) mới có quyền Merge code.
+- Mỗi thành viên làm việc trên nhánh riêng:
+  + Trang (Leader): `trang/auth-dashboard` (Auth, Phân quyền, Dashboard, Users)
+  + Bình (Dev): `binh/room-management` (Phòng, Loại phòng, Tiện nghi, Sự cố, Thông báo)[cite: 2]
+  + Ngọc (Dev): `ngoc/tenant-contract` (Hồ sơ khách, Hợp đồng, Thành viên)[cite: 2]
+  + Linh (Dev): `linh/billing-payment` (Chỉ số điện nước, Hóa đơn, Thanh toán, Công nợ)[cite: 2]
+
+## 2. QUY CHUẨN CÔNG NGHỆ (TECH STACK)
+- Backend: Node.js (Express framework), cơ sở dữ liệu MySQL 8.0 (sử dụng thư viện `mysql2/promise`).
+- Frontend: ReactJS, TypeScript, Tailwind CSS, Axios, React Router v6.
+- Database: 11 bảng chuẩn DDL. Tất cả khóa chính (Primary Key) sử dụng `UUID` dạng chuỗi (36 ký tự)[cite: 2].
+
+## 3. QUY TẮC ĐẶT TÊN (NAMING CONVENTIONS)
+- Cơ sở dữ liệu (Database): Tên bảng và tên cột dùng dạng `snake_case` (Ví dụ: `identity_card_number`, `password_hash`, `utility_readings`)[cite: 2].
+- Backend (Node.js): Biến, hàm, tham số dùng dạng `camelCase` (Ví dụ: `identityCardNumber`, `generateInvoice`).
+- Frontend (ReactJS):
+  + File Component & tên Component dùng `PascalCase` (Ví dụ: `TenantList.tsx`, `ContractDetailModal.tsx`).
+  + File utility/hooks dùng `camelCase` (Ví dụ: `useAuth.ts`, `formatCurrency.ts`).
+
+## 4. QUY CHUẨN VIẾT API RESTFUL
+- Tất cả API Backend phải có tiền tố URL: `/api/v1/`
+- Phản hồi API (API Response) phải luôn trả về đúng định dạng JSON chuẩn:
+  {
+    "success": true | false,
+    "message": "Thông báo kết quả",
+    "data": { ... } // hoặc null nếu có lỗi
+  }
+- Xử lý mã lỗi HTTP Response chính xác:
+  + 200 OK: Thành công
+  + 201 Created: Tạo mới tài nguyên thành công
+  + 400 Bad Request: Dữ liệu gửi lên thiếu hoặc sai định dạng
+  + 401 Unauthorized: Chưa đăng nhập hoặc Token hết hạn
+  + 403 Forbidden: Không đủ quyền (Ví dụ: TENANT truy cập route ADMIN)
+  + 500 Internal Server Error: Lỗi hệ thống/máy chủ
+
+## 5. BẢO MẬT & RÀNG BUỘC (SECURITY & VALIDATION)
+- Tất cả mật khẩu lưu trong DB phải mã hóa bằng `bcrypt`. Tuyệt đối KHÔNG trả về trường `password_hash` trong các API response[cite: 2].
+- Các API cần bảo vệ phải kiểm tra JWT Token qua header `Authorization: Bearer <token>`[cite: 2].
+- Mật khẩu khi đăng ký/đổi mật khẩu phải kiểm tra định dạng: tối thiểu 6 ký tự và phải chứa ít nhất 1 ký tự đặc biệt `@`.

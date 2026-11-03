@@ -1,0 +1,8 @@
+import type {Item} from "../../types/notifications" 
+export const initialItems: Item[] = [
+  { id: '1', title: 'Thông báo tăng giá điện từ tháng 10', content: 'Kính gửi quý khách thuê phòng, theo quyết định điều chỉnh giá điện mới từ công ty điện lực, chúng tôi xin phép được áp dụng đơn giá điện mới...', recipient: 'Tất cả', sentAt: '10:30 - 01/10/2026', unread: true },
+  { id: '2', title: 'Lịch vệ sinh bể nước ngày 05/10', content: 'Ban quản lý sẽ tiến hành thau rửa, vệ sinh toàn bộ hệ thống bồn chứa nước sạch từ 08:00 đến 12:00. Xin quý khách vui lòng dự trữ nước sạch...', recipient: 'Tất cả', sentAt: '16:15 - 28/09/2026', unread: true },
+  { id: '3', title: 'Nhắc nhở thanh toán tiền trọ tháng 9', content: 'Hệ thống ghi nhận phòng P101 vẫn chưa hoàn tất đóng tiền phòng và chi phí dịch vụ tháng 9. Vui lòng thanh toán đúng hạn...', recipient: 'Nguyễn Văn Trang (P101)', sentAt: '09:00 - 27/09/2026', unread: false },
+  { id: '4', title: 'Thông báo cúp điện ngày 02/10', content: 'Theo kế hoạch bảo trì lưới điện khu vực của Điện lực Quận, toàn bộ khu nhà trọ sẽ tạm thời mất điện từ 13:00 đến 17:00 ngày 02/10...', recipient: 'Tất cả', sentAt: '14:20 - 25/09/2026', unread: false },
+  { id: '5', title: 'Quy định mới về giờ giấc ra vào', content: 'Nhằm tăng cường an ninh trật tự, từ ngày 01/10 khu trọ áp dụng giờ khóa cổng chính từ 23:30 hằng ngày. Quý khách đi trễ vui lòng sử dụng vân tay...', recipient: 'Tất cả', sentAt: '08:00 - 20/09/2026', unread: false },
+]

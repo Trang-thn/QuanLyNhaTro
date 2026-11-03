@@ -21,3 +21,21 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+# Node / Vite
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+!.env.example
+.codex/
+.agents/skills/
+dist/
+test*
+AGENTS.md
+graphify-out
+trang/
+/playwright-report/
+/node_modules/
+/test-results/
+/frontend/tsconfig.tsbuildinfo
