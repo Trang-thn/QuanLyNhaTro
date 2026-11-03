@@ -62,7 +62,8 @@ function validate(data: FormData, mode: TypeMode, selectedType?: RoomTypeApiDTO)
     if (!data.new_type_price.trim()) errors.price = 'Vui lòng nhập giá cơ bản'
     else if (!Number.isFinite(priceNum) || priceNum <= 0 || priceNum > 9999999999.99) errors.price = 'Giá cơ bản phải là số dương hợp lệ'
     const areaNum = parseArea(data.new_type_area)
-    if (areaNum !== null && (!Number.isFinite(areaNum) || areaNum <= 0 || areaNum > 999.99)) errors.area = 'Diện tích phải lớn hơn 0 và tối đa 999,99 m²'
+    if (!data.new_type_area.trim()) errors.area = 'Vui lòng nhập diện tích'
+    else if (areaNum !== null && (!Number.isFinite(areaNum) || areaNum <= 0 || areaNum > 999.99)) errors.area = 'Diện tích phải lớn hơn 0 và tối đa 999,99 m²'
   }
 
   return errors
@@ -252,8 +253,8 @@ export function RoomAddModal({ onClose, onSave, roomTypes, amenities, loadingTyp
                     {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Diện tích (m²)</label>
-                    <input type="text" inputMode="decimal" placeholder="Có thể để trống" value={form.new_type_area} onChange={e => { setForm(f => ({ ...f, new_type_area: e.target.value })); setErrors(er => ({ ...er, area: undefined })) }} className={inputClass(errors.area)} />
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Diện tích (m²)<span className="text-red-500">*</span></label>
+                    <input type="text" inputMode="decimal" placeholder="Ví dụ: 20.5" value={form.new_type_area} onChange={e => { setForm(f => ({ ...f, new_type_area: e.target.value })); setErrors(er => ({ ...er, area: undefined })) }} className={inputClass(errors.area)} />
                     {errors.area && <p className="mt-1 text-xs text-red-500">{errors.area}</p>}
                   </div>
                 </div>
@@ -261,7 +262,6 @@ export function RoomAddModal({ onClose, onSave, roomTypes, amenities, loadingTyp
                   <label className="mb-1.5 block text-sm font-medium text-gray-700">Mô tả</label>
                   <textarea rows={2} placeholder="Không bắt buộc" value={form.new_type_description} onChange={e => setForm(f => ({ ...f, new_type_description: e.target.value }))} className="w-full resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#0d2137]" />
                 </div>
-                <p className="text-xs text-gray-500">Loại phòng mới sẽ được lưu cùng phòng trong một thao tác. Tên và giá là bắt buộc theo schema.</p>
               </div>
             )}
           </div>
@@ -269,7 +269,6 @@ export function RoomAddModal({ onClose, onSave, roomTypes, amenities, loadingTyp
           {/* Tiện nghi */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tiện nghi</label>
-            <p className="mb-2 text-xs text-gray-500">{'Ti\u1ec7n nghi ch\u01b0a \u0111\u01b0\u1ee3c l\u01b0u v\u00ec backend ch\u01b0a c\u00f3 API ti\u1ec7n nghi ph\u00f2ng.'}</p>
             <div className="flex flex-wrap gap-2">
               {amenities.map(a => {
                 const selected = form.amenity_ids.includes(a.id)
